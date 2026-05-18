@@ -68,7 +68,7 @@ export default function WorksLsbPlayerControls() {
   }
 
   return (
-    <div className="mt-7 w-[220px] text-right [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace]">
+    <div className="mt-7 hidden w-[220px] text-right [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace] md:block">
       <div className="flex items-center justify-end gap-3">
         <button
           type="button"

@@ -369,7 +369,7 @@ export default function Work({
     function handleTouchStart(event: TouchEvent) {
       const touch = event.touches[0];
 
-      if (!touch || !isMobileViewport() || isInteractiveTarget(event.target)) {
+      if (!touch || !isMobileViewport()) {
         return;
       }
 

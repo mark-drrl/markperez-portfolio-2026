@@ -25,21 +25,21 @@ export default function WorksInteriorPage() {
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-28 bg-gradient-to-b from-[#E5E5E3] via-[#E5E5E3]/82 to-transparent" />
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-32 bg-gradient-to-t from-[#E5E5E3] via-[#E5E5E3]/78 to-transparent" />
 
-      <section className="relative z-10 grid h-full grid-cols-[1fr_minmax(300px,33vw)_1fr] items-center gap-[7vw] px-[8vw]">
-        <div className="flex justify-end">
-          <h1 className="font-editorial max-w-[220px] text-right text-[clamp(25px,2.1vw,38px)] leading-[0.86] tracking-[0.04em]">
+      <section className="relative z-10 grid h-full grid-cols-1 items-center px-[10vw] md:grid-cols-[1fr_minmax(300px,33vw)_1fr] md:gap-[7vw] md:px-[8vw]">
+        <div className="absolute bottom-12 left-5 z-30 flex justify-start md:static md:flex md:justify-end">
+          <h1 className="font-editorial max-w-[220px] text-left text-[clamp(25px,2.1vw,38px)] md:text-right leading-[0.86] tracking-[0.04em]">
             INTERIOR
           </h1>
         </div>
 
-        <div className="relative mx-auto h-screen w-full max-w-[420px] overflow-hidden">
+        <div className="relative mx-auto h-screen w-full max-w-[82vw] overflow-hidden md:max-w-[420px]">
           <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[22vh] bg-gradient-to-b from-[#E5E5E3] via-[#E5E5E3]/72 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-[22vh] bg-gradient-to-t from-[#E5E5E3] via-[#E5E5E3]/72 to-transparent" />
 
           <WorksSorenGallery items={galleryItems} />
         </div>
 
-        <div className="grid max-w-[360px] grid-cols-[1px_1fr] gap-14">
+        <div className="hidden max-w-[360px] grid-cols-[1px_1fr] gap-14 md:grid">
           <div className="h-[225px] w-px self-center bg-[#9F1F2E]" />
           <div className="font-neue self-center text-[11px] leading-[1.25] text-black/58">
             <p className="max-w-[300px]">

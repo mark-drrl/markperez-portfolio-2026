@@ -65,7 +65,7 @@ export default function WorksNautiquePlayerControls() {
 
   return (
     <div
-      className={`mt-7 w-[220px] text-right transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace] ${
+      className={`mt-7 hidden w-[220px] text-right transition-all duration-[900ms] ease-[cubic-bezier(0.16,1,0.3,1)] [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace] md:block ${
         playerState.isActive
           ? "translate-y-0 opacity-100 blur-0"
           : "pointer-events-none translate-y-3 opacity-0 blur-sm"

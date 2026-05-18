@@ -26,6 +26,7 @@ export default function WorksSorenGallery({ items }: WorksSorenGalleryProps) {
   const currentScrollRef = useRef(0);
   const animationFrameRef = useRef(0);
   const snapTimeoutRef = useRef(0);
+  const lastTouchYRef = useRef(0);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -105,13 +106,52 @@ export default function WorksSorenGallery({ items }: WorksSorenGalleryProps) {
       snapTimeoutRef.current = window.setTimeout(snapToNearestItem, 160);
     }
 
+    function handleTouchStart(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (!touch) {
+        return;
+      }
+
+      lastTouchYRef.current = touch.clientY;
+    }
+
+    function handleTouchMove(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (!touch) {
+        return;
+      }
+
+      event.preventDefault();
+      const maxScroll =
+        scrollerElement.scrollHeight - scrollerElement.clientHeight;
+      const deltaY = lastTouchYRef.current - touch.clientY;
+      lastTouchYRef.current = touch.clientY;
+      targetScrollRef.current = Math.max(
+        0,
+        Math.min(maxScroll, targetScrollRef.current + deltaY * 1.35),
+      );
+
+      window.clearTimeout(snapTimeoutRef.current);
+      snapTimeoutRef.current = window.setTimeout(snapToNearestItem, 180);
+    }
+
     animationFrameRef.current = requestAnimationFrame(render);
     scrollerElement.addEventListener("wheel", handleWheel, { passive: false });
+    scrollerElement.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    scrollerElement.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
 
     return () => {
       window.clearTimeout(snapTimeoutRef.current);
       cancelAnimationFrame(animationFrameRef.current);
       scrollerElement.removeEventListener("wheel", handleWheel);
+      scrollerElement.removeEventListener("touchstart", handleTouchStart);
+      scrollerElement.removeEventListener("touchmove", handleTouchMove);
     };
   }, []);
 
@@ -128,7 +168,7 @@ export default function WorksSorenGallery({ items }: WorksSorenGalleryProps) {
               data-gallery-item
               data-gallery-index={index}
               data-cursor-interactive="true"
-              className={`relative cursor-pointer overflow-hidden ${item.className}`}
+              className={`relative max-md:!w-full cursor-pointer overflow-hidden ${item.className}`}
               onClick={() =>
                 setLightboxItem({
                   type: item.type,
