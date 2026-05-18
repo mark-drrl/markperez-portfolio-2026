@@ -63,6 +63,10 @@ const columns = [
   },
 ] as const;
 
+const mobileTileHeight = 58;
+const mobileGap = 0.5;
+const mobileCycleHeight = workImages.length * (mobileTileHeight + mobileGap);
+
 const socialButtons: readonly { label: string; href?: string }[] = [
   { label: "ABOUT", href: "/about" },
   { label: "CONTACT", href: "/contact" },
@@ -216,6 +220,38 @@ function WorkColumn({
   );
 }
 
+function WorkMobileColumn({
+  virtualScroll,
+}: {
+  virtualScroll: MotionValue<number>;
+}) {
+  const loopedImages = [...workImages, ...workImages, ...workImages];
+  const y = useTransform(virtualScroll, (latest) => {
+    const rawOffset = ((latest / 900) * 0.72 * mobileCycleHeight) %
+      mobileCycleHeight;
+    return `${-mobileCycleHeight - rawOffset}vh`;
+  });
+
+  return (
+    <motion.div
+      className="absolute inset-x-0 top-0 h-full will-change-transform"
+      style={{ y }}
+    >
+      <div className="flex flex-col gap-[0.5vh]">
+        {loopedImages.map((src, tileIndex) => (
+          <div
+            key={`${src}-${tileIndex}`}
+            className="w-full overflow-hidden bg-neutral-300"
+            style={{ height: `${mobileTileHeight}vh` }}
+          >
+            <WorkImage src={src} />
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Work({
   opacity,
   blur,
@@ -314,13 +350,18 @@ export default function Work({
       <motion.div
         className="absolute inset-0 h-full w-full overflow-hidden will-change-transform"
       >
-        {columns.map((column, columnIndex) => (
-          <WorkColumn
-            key={`column-${columnIndex}`}
-            column={column}
-            virtualScroll={easedVirtualScroll}
-          />
-        ))}
+        <div className="hidden h-full w-full md:block">
+          {columns.map((column, columnIndex) => (
+            <WorkColumn
+              key={`column-${columnIndex}`}
+              column={column}
+              virtualScroll={easedVirtualScroll}
+            />
+          ))}
+        </div>
+        <div className="block h-full w-full md:hidden">
+          <WorkMobileColumn virtualScroll={easedVirtualScroll} />
+        </div>
       </motion.div>
 
       <div className="pointer-events-none absolute inset-0 bg-[#EAEAEA]/10" />
