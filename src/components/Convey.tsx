@@ -105,7 +105,7 @@ export default function Convey({
         className="absolute inset-0 flex h-full w-full flex-col justify-between p-12"
       >
         <motion.div
-          className="pointer-events-none absolute left-[38.85%] top-[22%] z-0 h-[52%] w-[22.27%] overflow-hidden bg-neutral-300"
+          className="pointer-events-none absolute left-1/2 top-[29%] z-0 h-[42%] w-[34%] -translate-x-1/2 overflow-hidden bg-neutral-300 md:left-[38.85%] md:top-[22%] md:h-[52%] md:w-[22.27%] md:translate-x-0"
           style={{
             opacity: rectangleOpacity,
             filter: rectangleBlur,
@@ -131,7 +131,7 @@ export default function Convey({
         </motion.div>
 
         <motion.div
-          className="pointer-events-none absolute left-[38.85%] top-[22%] z-10 h-[52%] w-[22.27%] bg-white/35 blur-3xl"
+          className="pointer-events-none absolute left-1/2 top-[29%] z-10 h-[42%] w-[34%] -translate-x-1/2 bg-white/35 blur-3xl md:left-[38.85%] md:top-[22%] md:h-[52%] md:w-[22.27%] md:translate-x-0"
           style={{
             opacity: burstOpacity,
             scale: burstScale,
@@ -151,7 +151,7 @@ export default function Convey({
           }}
         >
           <h2
-            className="text-5xl md:text-7xl tracking-[-0.02em] text-[#9A3A3A]"
+            className="whitespace-nowrap text-[clamp(26px,7vw,40px)] tracking-[-0.02em] text-[#9A3A3A] md:text-7xl"
           >
             <span className="font-editorial italic font-light">
               Conveying

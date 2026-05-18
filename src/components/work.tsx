@@ -272,6 +272,12 @@ export default function Work({
     mass: 0.7,
     restDelta: 0.001,
   });
+  const mobileEasedVirtualScroll = useSpring(virtualScroll, {
+    damping: 42,
+    stiffness: 86,
+    mass: 0.95,
+    restDelta: 0.001,
+  });
 
   useEffect(() => {
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -387,7 +393,7 @@ export default function Work({
       event.preventDefault();
       const deltaY = lastTouchYRef.current - touch.clientY;
       lastTouchYRef.current = touch.clientY;
-      virtualScroll.set(virtualScroll.get() + deltaY * 1.45);
+      virtualScroll.set(virtualScroll.get() + deltaY * 1.1);
       window.scrollTo(0, workLockScrollYRef.current);
     }
 
@@ -459,7 +465,7 @@ export default function Work({
           ))}
         </div>
         <div className="block h-full w-full md:hidden">
-          <WorkMobileColumn virtualScroll={easedVirtualScroll} />
+          <WorkMobileColumn virtualScroll={mobileEasedVirtualScroll} />
         </div>
       </motion.div>
 
