@@ -134,12 +134,12 @@ export default function AboutContactShell({ initialTab }: AboutContactShellProps
               />
               <div className="pointer-events-none absolute inset-0 bg-[#E5E5E3]/12 mix-blend-screen" />
               <div className="absolute left-5 top-5 text-left md:hidden">
-                <h1 className="font-editorial text-[30px] uppercase leading-[0.86] tracking-[0.1em] text-black/78">
+                <h1 className="font-editorial text-[30px] uppercase leading-[0.86] tracking-[0.04em] text-white">
                   MARK
                   <br />
                   PEREZ
                 </h1>
-                <p className="font-neue mt-4 text-[8px] uppercase leading-[1.35] tracking-[0.2em] text-black/56">
+                <p className="font-neue mt-4 text-[8px] uppercase leading-[1.35] tracking-[0.14em] text-white/82">
                   FULL STACK
                   <br />
                   CREATIVE SPECIALIST
