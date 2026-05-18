@@ -40,7 +40,7 @@ export default function Hero({
       style={{ opacity, filter: blur, visibility, pointerEvents }}
     >
       <video
-        className="absolute left-1/2 top-0 h-full w-[115.48%] max-w-none -translate-x-1/2 object-cover"
+        className="absolute left-[30%] top-0 h-full w-[185%] max-w-none -translate-x-1/2 object-cover md:left-1/2 md:w-[115.48%]"
         src="/hero-loop.mp4"
         poster="/hero-image.jpg"
         autoPlay
