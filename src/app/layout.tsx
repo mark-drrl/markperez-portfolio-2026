@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Portfolio",
+  title: "MARK PEREZ",
   description: "Selected Works",
   icons: {
     icon: "/icon/favicon.png",
