@@ -259,8 +259,12 @@ export default function Work({
   scrollYProgress,
 }: WorkProps) {
   const [dubaiTime, setDubaiTime] = useState("");
+  const sectionRef = useRef<HTMLElement>(null);
   const isWorkLockedRef = useRef(false);
   const workLockScrollYRef = useRef(0);
+  const lastTouchYRef = useRef(0);
+  const holdDirectionRef = useRef(0);
+  const holdAnimationFrameRef = useRef(0);
   const virtualScroll = useMotionValue(0);
   const easedVirtualScroll = useSpring(virtualScroll, {
     damping: 32,
@@ -290,14 +294,34 @@ export default function Work({
   }, []);
 
   useEffect(() => {
-    function handleWheel(event: WheelEvent) {
-      if (scrollYProgress.get() >= 0.64) {
-        isWorkLockedRef.current = true;
-        workLockScrollYRef.current = Math.max(
-          workLockScrollYRef.current,
-          window.scrollY,
-        );
+    const sectionElement = sectionRef.current;
+
+    function isMobileViewport() {
+      return window.matchMedia("(max-width: 767px)").matches;
+    }
+
+    function isInteractiveTarget(target: EventTarget | null) {
+      return target instanceof Element
+        ? Boolean(target.closest("a[href], button, [role='button']"))
+        : false;
+    }
+
+    function lockWorkScroll() {
+      if (scrollYProgress.get() < 0.64) {
+        return false;
       }
+
+      isWorkLockedRef.current = true;
+      workLockScrollYRef.current = Math.max(
+        workLockScrollYRef.current,
+        window.scrollY,
+      );
+
+      return true;
+    }
+
+    function handleWheel(event: WheelEvent) {
+      lockWorkScroll();
 
       if (!isWorkLockedRef.current) {
         return;
@@ -307,6 +331,63 @@ export default function Work({
       event.stopPropagation();
       event.stopImmediatePropagation();
       virtualScroll.set(virtualScroll.get() + event.deltaY * 0.8);
+      window.scrollTo(0, workLockScrollYRef.current);
+    }
+
+    function stopHoldScroll() {
+      holdDirectionRef.current = 0;
+      window.cancelAnimationFrame(holdAnimationFrameRef.current);
+    }
+
+    function holdScroll() {
+      if (!holdDirectionRef.current || !isWorkLockedRef.current) {
+        return;
+      }
+
+      virtualScroll.set(virtualScroll.get() + holdDirectionRef.current * 18);
+      window.scrollTo(0, workLockScrollYRef.current);
+      holdAnimationFrameRef.current = window.requestAnimationFrame(holdScroll);
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        !isMobileViewport() ||
+        isInteractiveTarget(event.target) ||
+        !sectionElement ||
+        !lockWorkScroll()
+      ) {
+        return;
+      }
+
+      const rect = sectionElement.getBoundingClientRect();
+      holdDirectionRef.current =
+        event.clientY < rect.top + rect.height / 2 ? -1 : 1;
+      window.cancelAnimationFrame(holdAnimationFrameRef.current);
+      holdAnimationFrameRef.current = window.requestAnimationFrame(holdScroll);
+    }
+
+    function handleTouchStart(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (!touch || !isMobileViewport() || isInteractiveTarget(event.target)) {
+        return;
+      }
+
+      lastTouchYRef.current = touch.clientY;
+      lockWorkScroll();
+    }
+
+    function handleTouchMove(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (!touch || !isMobileViewport() || !isWorkLockedRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      const deltaY = lastTouchYRef.current - touch.clientY;
+      lastTouchYRef.current = touch.clientY;
+      virtualScroll.set(virtualScroll.get() + deltaY * 1.45);
       window.scrollTo(0, workLockScrollYRef.current);
     }
 
@@ -324,10 +405,27 @@ export default function Work({
       capture: true,
     });
     window.addEventListener("scroll", handleScroll, { passive: true });
+    sectionElement?.addEventListener("pointerdown", handlePointerDown);
+    window.addEventListener("pointerup", stopHoldScroll);
+    window.addEventListener("pointercancel", stopHoldScroll);
+    sectionElement?.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    sectionElement?.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    sectionElement?.addEventListener("touchend", stopHoldScroll);
 
     return () => {
       window.removeEventListener("wheel", handleWheel, { capture: true });
       window.removeEventListener("scroll", handleScroll);
+      sectionElement?.removeEventListener("pointerdown", handlePointerDown);
+      window.removeEventListener("pointerup", stopHoldScroll);
+      window.removeEventListener("pointercancel", stopHoldScroll);
+      sectionElement?.removeEventListener("touchstart", handleTouchStart);
+      sectionElement?.removeEventListener("touchmove", handleTouchMove);
+      sectionElement?.removeEventListener("touchend", stopHoldScroll);
+      stopHoldScroll();
     };
   }, [scrollYProgress, virtualScroll]);
 
@@ -340,6 +438,7 @@ export default function Work({
 
   return (
     <motion.section
+      ref={sectionRef}
       className="absolute inset-0 h-full w-full overflow-hidden bg-[#EAEAEA] text-black"
       style={{
         opacity,
@@ -394,7 +493,7 @@ export default function Work({
         }}
       />
 
-      <div className="pointer-events-none absolute inset-x-8 top-8 z-20 grid grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white">
+      <div className="pointer-events-none absolute inset-x-8 top-8 z-20 grid grid-cols-[1fr_auto] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white md:grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)]">
         <div className="font-semibold leading-relaxed">
           <p className="font-neue">
             MARK <span className="text-[#9F1F2E]">PEREZ</span>
@@ -423,7 +522,7 @@ export default function Work({
             )}
           </div>
         </div>
-        <p className="font-neue max-w-[520px] font-semibold leading-relaxed uppercase tracking-[0.08em] text-white">
+        <p className="font-neue hidden max-w-[520px] font-semibold leading-relaxed uppercase tracking-[0.08em] text-white md:block">
           Full-stack Creative Specialist bridging high-end cinematography,
           AI-driven art direction, social media strategy, and immersive web
           architecture.

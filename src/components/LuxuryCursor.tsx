@@ -90,7 +90,7 @@ export default function LuxuryCursor() {
 
   return (
     <motion.div
-      className="pointer-events-none fixed left-0 top-0 z-[70] h-2.5 w-2.5 rounded-full bg-[#9F1F2E]"
+      className="pointer-events-none fixed left-0 top-0 z-[70] hidden h-2.5 w-2.5 rounded-full bg-[#9F1F2E] md:block"
       animate={{
         backgroundColor: isHoveringClickable
           ? "rgba(159, 31, 46, 0.45)"

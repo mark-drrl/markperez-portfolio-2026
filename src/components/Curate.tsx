@@ -15,6 +15,12 @@ const existingImagePaths = [
   "/work/portfolio-7.jpg",
 ];
 
+interface ReplacementCellDefinition {
+  className: string;
+  start: number;
+  end: number;
+}
+
 const replacementCells = [
   {
     className: "left-0 top-0 h-[60.5%] w-[calc((100%-1vh)/3)]",
@@ -51,7 +57,13 @@ const replacementCells = [
     start: 0.525,
     end: 0.585,
   },
-] as const;
+] as const satisfies readonly ReplacementCellDefinition[];
+
+const mobileReplacementCells = [
+  { className: "left-0 top-[-24%] h-[56%] w-full", start: 0.345, end: 0.405 },
+  { className: "left-0 top-[calc(32%+0.5vh)] h-[56%] w-full", start: 0.405, end: 0.465 },
+  { className: "left-0 top-[calc(88%+1vh)] h-[56%] w-full", start: 0.495, end: 0.555 },
+] as const satisfies readonly ReplacementCellDefinition[];
 
 interface CurateProps {
   opacity: MotionValue<number>;
@@ -62,7 +74,7 @@ interface CurateProps {
 }
 
 interface ReplacementImageProps {
-  cell: (typeof replacementCells)[number];
+  cell: ReplacementCellDefinition;
   index: number;
   scrollYProgress: MotionValue<number>;
 }
@@ -167,8 +179,18 @@ export default function Curate({
       className="absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden text-black"
       style={{ opacity, filter: blur, pointerEvents, visibility }}
     >
-      <div className="absolute inset-0 z-0 h-full w-full overflow-hidden blur-[18px]">
+      <div className="absolute inset-0 z-0 hidden h-full w-full overflow-hidden blur-[18px] md:block">
         {replacementCells.map((cell, index) => (
+          <ReplacementImage
+            key={cell.className}
+            cell={cell}
+            index={index}
+            scrollYProgress={scrollYProgress}
+          />
+        ))}
+      </div>
+      <div className="absolute inset-0 z-0 block h-full w-full overflow-hidden blur-[18px] md:hidden">
+        {mobileReplacementCells.map((cell, index) => (
           <ReplacementImage
             key={cell.className}
             cell={cell}
