@@ -151,7 +151,7 @@ export default function Convey({
           }}
         >
           <h2
-            className="whitespace-nowrap text-[clamp(26px,7vw,40px)] tracking-[-0.02em] text-[#9A3A3A] md:text-7xl"
+            className="whitespace-nowrap text-[clamp(36px,9vw,54px)] tracking-[-0.02em] text-[#9A3A3A] md:text-7xl"
           >
             <span className="font-editorial italic font-light">
               Conveying

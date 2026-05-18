@@ -30,6 +30,8 @@ const skillGroups = [
   ],
 ] as const;
 
+const skillTickerItems = skillGroups.flat();
+
 interface AboutContactShellProps {
   initialTab: InfoTab;
 }
@@ -99,13 +101,13 @@ export default function AboutContactShell({ initialTab }: AboutContactShellProps
         {activeTab === "about" ? (
           <motion.section
             key="about"
-            className="grid h-full grid-cols-[1fr_minmax(260px,26vw)_1fr] items-center gap-[6vw] px-[12vw]"
+            className="h-full md:grid md:grid-cols-[1fr_minmax(260px,26vw)_1fr] md:items-center md:gap-[6vw] md:px-[12vw]"
             initial={{ opacity: 0, filter: "blur(18px)" }}
             animate={{ opacity: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, filter: "blur(18px)" }}
             transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="flex justify-end text-right">
+            <div className="hidden justify-end text-right md:flex">
               <div>
                 <h1 className="font-editorial text-[clamp(25px,2.1vw,38px)] uppercase leading-[0.86] tracking-[0.1em]">
                   MARK
@@ -124,16 +126,46 @@ export default function AboutContactShell({ initialTab }: AboutContactShellProps
               </div>
             </div>
 
-            <div className="relative mx-auto aspect-[618/824] w-full max-w-[335px] overflow-hidden bg-neutral-300">
+            <div className="relative left-1/2 top-1/2 aspect-[618/824] w-[78vw] max-w-[335px] -translate-x-1/2 -translate-y-1/2 overflow-hidden bg-neutral-300 md:static md:mx-auto md:w-full md:translate-x-0 md:translate-y-0">
               <img
                 src="/about.jpg"
                 alt="Mark Perez"
                 className="h-full w-full object-cover grayscale contrast-110 brightness-[1.02]"
               />
               <div className="pointer-events-none absolute inset-0 bg-[#E5E5E3]/12 mix-blend-screen" />
+              <div className="absolute left-5 top-5 text-left md:hidden">
+                <h1 className="font-editorial text-[30px] uppercase leading-[0.86] tracking-[0.1em] text-black/78">
+                  MARK
+                  <br />
+                  PEREZ
+                </h1>
+                <p className="font-neue mt-4 text-[8px] uppercase leading-[1.35] tracking-[0.2em] text-black/56">
+                  FULL STACK
+                  <br />
+                  CREATIVE SPECIALIST
+                  <br />
+                  AND A PRETTY CHILL
+                  <br />
+                  DUDE
+                </p>
+              </div>
+              <div className="absolute inset-x-0 bottom-14 overflow-hidden bg-black/18 py-2 backdrop-blur-sm md:hidden">
+                <motion.div
+                  className="flex w-max gap-6 whitespace-nowrap text-[7px] uppercase tracking-[0.24em] text-white/82 [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace]"
+                  animate={{ x: ["0%", "-50%"] }}
+                  transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+                >
+                  {[...skillTickerItems, ...skillTickerItems].map((item, index) => (
+                    <span key={`${item}-${index}`}>{item}</span>
+                  ))}
+                </motion.div>
+              </div>
+              <p className="font-neue absolute bottom-5 left-1/2 max-w-[190px] -translate-x-1/2 text-center text-[8px] leading-[1.25] tracking-[0.16em] text-white/82 md:hidden">
+                I like the outdoors so I used this random photo lol
+              </p>
             </div>
 
-            <div className="grid max-w-[360px] grid-cols-[1px_1fr] gap-12">
+            <div className="hidden max-w-[360px] grid-cols-[1px_1fr] gap-12 md:grid">
               <div className="h-[225px] w-px self-center bg-[#9F1F2E]" />
               <div className="self-center text-[8.8px] uppercase leading-[1.45] tracking-[0.26em] text-black/42 [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace]">
                 {skillGroups.map((group, groupIndex) => (
@@ -149,7 +181,7 @@ export default function AboutContactShell({ initialTab }: AboutContactShellProps
               </div>
             </div>
 
-            <p className="font-neue absolute bottom-[8vh] left-1/2 max-w-[190px] -translate-x-1/2 text-center text-[9px] leading-[1.25] tracking-[0.16em] text-black/44">
+            <p className="font-neue absolute bottom-[8vh] left-1/2 hidden max-w-[190px] -translate-x-1/2 text-center text-[9px] leading-[1.25] tracking-[0.16em] text-black/44 md:block">
               I like the outdoors so I used this random photo lol
             </p>
           </motion.section>

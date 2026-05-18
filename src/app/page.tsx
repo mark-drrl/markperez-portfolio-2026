@@ -301,7 +301,7 @@ export default function Home() {
   ]);
 
   return (
-    <main ref={containerRef} className="relative h-[3600vh] bg-[#EAEAEA]">
+    <main ref={containerRef} className="relative h-[1800vh] bg-[#EAEAEA] md:h-[3600vh]">
       <span
         id="works"
         className="pointer-events-none absolute top-[64%] h-px w-px"
