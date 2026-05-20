@@ -68,6 +68,9 @@ export const MOBILE_HOME_SCROLL_VH = 2100;
 /** Scroll progress where Work takes over on mobile. */
 export const MOBILE_WORK_SCROLL_PROGRESS = 0.78;
 
+/** Fully revealed Work layer (no crossfade buffer when landing from project pages). */
+export const MOBILE_WORK_SCROLL_FULL = MOBILE_WORK_SCROLL_PROGRESS + 0.08;
+
 /** Scroll spans per section on mobile (progress 0–1). */
 export const MOBILE_SECTION_SPAN: Record<
   MobileHomeSection,

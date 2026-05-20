@@ -14,7 +14,13 @@ const WORK_IMAGE_LUMINANCE: Record<number, number> = {
   9: 0.52,
 };
 
-const MOBILE_SCROLL_STEP = 88;
+function getMobileWorkScrollStride() {
+  if (typeof window === "undefined") {
+    return 560;
+  }
+
+  return window.innerHeight * 0.565;
+}
 const HEADER_SAMPLE_VH = 14;
 
 type WorkColumn = {
@@ -74,7 +80,8 @@ export function workHeaderNavTone(
   },
 ) {
   const imageIndex = options.isMobile
-    ? ((Math.round(virtualOffset / MOBILE_SCROLL_STEP) % options.imageCount) +
+    ? ((Math.round(virtualOffset / getMobileWorkScrollStride()) %
+        options.imageCount) +
         options.imageCount) %
       options.imageCount
     : options.leftColumn

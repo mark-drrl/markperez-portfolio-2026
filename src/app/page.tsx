@@ -10,6 +10,7 @@ import {
   HOME_SCROLL_SYNC_EVENT,
   HOME_WORK_SCROLL_PROGRESS,
   getHomeScrollProgress,
+  getWorkLandingScrollProgress,
   prepareHomeScrollToWorks,
   scrollHomeToProgress,
   scrollHomeToTop,
@@ -121,7 +122,7 @@ export default function Home() {
     if (shouldLandOnWorkGallery()) {
       prepareHomeScrollToWorks();
       const progress = scrollHomeToProgress(
-        workThresholdForViewport(),
+        getWorkLandingScrollProgress(),
         main,
       );
       syncHomeScrollFromProgress(progress);
@@ -143,7 +144,7 @@ export default function Home() {
       if (shouldLandOnWorkGallery()) {
         prepareHomeScrollToWorks();
         syncHomeScrollFromProgress(
-          scrollHomeToProgress(workThresholdForViewport(), main),
+          scrollHomeToProgress(getWorkLandingScrollProgress(), main),
         );
         return;
       }

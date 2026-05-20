@@ -1,5 +1,7 @@
+import { MOBILE_WORK_SCROLL_FULL } from "@/lib/mobileHomeOpacity";
 import {
   resetHomeScrollPosition,
+  resetWorkVirtualScroll,
   workScrollBridge,
 } from "@/lib/workScrollBridge";
 
@@ -114,6 +116,18 @@ export function scrollHomeToTop(container?: HTMLElement | null) {
   return scrollHomeToProgress(0, container);
 }
 
+/** Scroll progress that lands on Work fully visible (avoids white crossfade on return). */
+export function getWorkLandingScrollProgress() {
+  if (
+    typeof window !== "undefined" &&
+    window.matchMedia("(max-width: 767px)").matches
+  ) {
+    return MOBILE_WORK_SCROLL_FULL;
+  }
+
+  return HOME_WORK_SCROLL_PROGRESS;
+}
+
 export function shouldLandOnWorkGallery() {
   if (typeof window === "undefined") {
     return false;
@@ -130,6 +144,7 @@ export function shouldLandOnWorkGallery() {
 export function prepareHomeScrollToWorks() {
   consumeHomeScrollWorksRequest();
   sessionStorage.removeItem(HOME_SCROLL_TOP_KEY);
+  resetWorkVirtualScroll();
 
   if (window.location.hash !== "#works") {
     window.history.replaceState(

@@ -92,20 +92,19 @@ export default function HomeMobileStack({ scrollYProgress }: HomeMobileStackProp
 
   const workOpacity = useTransform(scrollYProgress, (progress) => {
     const workEnter = MOBILE_WORK_SCROLL_PROGRESS - 0.05;
-    const workFull = MOBILE_WORK_SCROLL_PROGRESS + 0.08;
 
     if (progress <= workEnter) {
       return 0;
     }
 
-    if (progress >= workFull) {
+    if (progress >= MOBILE_WORK_SCROLL_PROGRESS) {
       return 1;
     }
 
-    return (progress - workEnter) / (workFull - workEnter);
+    return (progress - workEnter) / (MOBILE_WORK_SCROLL_PROGRESS - workEnter);
   });
-  const workPointerEvents = useTransform(workOpacity, (v) =>
-    v > 0.9 ? "auto" : "none",
+  const workPointerEvents = useTransform(scrollYProgress, (progress) =>
+    progress >= MOBILE_WORK_SCROLL_PROGRESS - 0.02 ? "auto" : "none",
   );
   const workBlur = useTransform(scrollYProgress, () => "blur(0px)");
 

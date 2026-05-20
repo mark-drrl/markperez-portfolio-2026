@@ -11,12 +11,8 @@ import {
 import { GalleryImage } from "@/components/GalleryMedia";
 import MarkPerezBrand from "@/components/MarkPerezBrand";
 import WorkSocialLinks from "@/components/WorkSocialLinks";
+import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
 import { workHeaderNavTone } from "@/lib/workSocialTone";
-import {
-  mobileStackCellBottom,
-  mobileStackCellMiddle,
-  mobileStackCellTop,
-} from "@/constants/mobileSectionGrid";
 import {
   dispatchHomeScrollSync,
   requestHomeScrollTop,
@@ -95,12 +91,33 @@ const columns = [
   },
 ] as const;
 
-const MOBILE_SCROLL_STEP = 88;
-const mobileWorkSlots = [
-  { className: mobileStackCellTop, offset: 0 },
-  { className: mobileStackCellMiddle, offset: 1 },
-  { className: mobileStackCellBottom, offset: 2 },
+const MOBILE_SNAP_DURATION_MS = 480;
+const MOBILE_WORK_CELL_VH = 56;
+const MOBILE_WORK_CELL_GAP_VH = 0.5;
+
+const mobileWorkStripImages = [
+  ...workImages,
+  ...workImages,
+  ...workImages,
 ] as const;
+
+function getMobileWorkScrollStride() {
+  if (typeof window === "undefined") {
+    return 560;
+  }
+
+  return window.innerHeight * ((MOBILE_WORK_CELL_VH + MOBILE_WORK_CELL_GAP_VH) / 100);
+}
+
+function workScrollEnterThreshold() {
+  if (typeof window === "undefined") {
+    return WORK_ENTER_PROGRESS;
+  }
+
+  return window.matchMedia("(max-width: 767px)").matches
+    ? MOBILE_WORK_SCROLL_PROGRESS - 0.04
+    : WORK_ENTER_PROGRESS;
+}
 
 function getWorkHref(src: string) {
   if (src === "/work/portfolio-1.jpg") return "/works-centurionv1";
@@ -234,47 +251,67 @@ function WorkColumnsDesktop({
   );
 }
 
+const mobileFocusedFilter = "grayscale(0) contrast(1.1) brightness(1.03)";
+const mobileIdleFilter = "grayscale(1) contrast(1.1) brightness(0.96)";
+
+function MobileWorkGalleryImage({
+  virtualScroll,
+  imageIndex,
+  src,
+}: {
+  virtualScroll: MotionValue<number>;
+  imageIndex: number;
+  src: string;
+}) {
+  const filter = useTransform(virtualScroll, (offset) => {
+    const stride = getMobileWorkScrollStride();
+    const focused =
+      ((Math.round(offset / stride) % workImages.length) + workImages.length) %
+      workImages.length;
+
+    return imageIndex === focused ? mobileFocusedFilter : mobileIdleFilter;
+  });
+
+  return (
+    <WorkImageLink src={src}>
+      <motion.img
+        src={src}
+        alt=""
+        className="h-full w-full object-cover"
+        style={{ filter }}
+        loading="lazy"
+        decoding="async"
+      />
+    </WorkImageLink>
+  );
+}
+
 function WorkMobileStack({
   virtualScroll,
 }: {
   virtualScroll: MotionValue<number>;
 }) {
-  const [baseIndex, setBaseIndex] = useState(0);
-
-  useMotionValueEvent(virtualScroll, "change", (latest) => {
-    const next =
-      ((Math.round(latest / MOBILE_SCROLL_STEP) % workImages.length) +
-        workImages.length) %
-      workImages.length;
-
-    setBaseIndex((current) => (current === next ? current : next));
-  });
+  const stripY = useTransform(virtualScroll, (offset) => -offset);
 
   return (
-    <div className="absolute inset-0 md:hidden">
-      {mobileWorkSlots.map((slot) => {
-        const src =
-          workImages[
-            (baseIndex + slot.offset + workImages.length) % workImages.length
-          ];
-        const isFocused = slot.offset === 1;
-
-        return (
+    <div className="absolute inset-0 overflow-hidden md:hidden">
+      <motion.div
+        className="absolute left-1/2 top-[22vh] w-full max-w-full -translate-x-1/2 will-change-transform"
+        style={{ y: stripY }}
+      >
+        {mobileWorkStripImages.map((src, index) => (
           <div
-            key={slot.className}
-            className={`absolute overflow-hidden bg-neutral-300 ${slot.className}`}
+            key={`${src}-${index}`}
+            className="mb-[0.5vh] h-[56vh] w-full overflow-hidden bg-neutral-300"
           >
-            <WorkImageLink src={src}>
-              <GalleryImage
-                src={src}
-                alt=""
-                isFocused={isFocused}
-                className="object-cover"
-              />
-            </WorkImageLink>
+            <MobileWorkGalleryImage
+              virtualScroll={virtualScroll}
+              imageIndex={index % workImages.length}
+              src={src}
+            />
           </div>
-        );
-      })}
+        ))}
+      </motion.div>
     </div>
   );
 }
@@ -285,22 +322,12 @@ export default function Work({
   pointerEvents,
   scrollYProgress,
 }: WorkProps) {
-  const [dubaiTime, setDubaiTime] = useState(() => {
-    if (typeof window === "undefined") {
-      return "";
-    }
-
-    return new Intl.DateTimeFormat("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Dubai",
-      timeZoneName: "short",
-    }).format(new Date());
-  });
+  const [dubaiTime, setDubaiTime] = useState("");
   const sectionRef = useRef<HTMLElement>(null);
   const isWorkLockedRef = useRef(false);
   const workLockScrollYRef = useRef(0);
   const lastTouchYRef = useRef(0);
+  const snapFrameRef = useRef(0);
   const virtualScroll = useMotionValue(0);
   const socialNavTone = useTransform(virtualScroll, (offset) =>
     workHeaderNavTone(offset, {
@@ -350,8 +377,50 @@ export default function Work({
     function isInWorkSection() {
       return (
         workScrollBridge.isLocked ||
-        scrollYProgress.get() >= WORK_ENTER_PROGRESS
+        scrollYProgress.get() >= workScrollEnterThreshold()
       );
+    }
+
+    function cancelSnapAnimation() {
+      window.cancelAnimationFrame(snapFrameRef.current);
+      snapFrameRef.current = 0;
+    }
+
+    function setVirtualScrollValue(value: number) {
+      const clamped = Math.max(0, value);
+      workScrollBridge.targetVirtualScroll = clamped;
+      workScrollBridge.displayVirtualScroll = clamped;
+      virtualScroll.set(clamped);
+    }
+
+    function snapMobileVirtualScroll() {
+      cancelSnapAnimation();
+
+      const stride = getMobileWorkScrollStride();
+      const start = virtualScroll.get();
+      const target = Math.round(start / stride) * stride;
+
+      if (Math.abs(target - start) < 0.5) {
+        setVirtualScrollValue(target);
+        return;
+      }
+
+      const startTime = performance.now();
+
+      function frame(now: number) {
+        const elapsed = now - startTime;
+        const t = Math.min(1, elapsed / MOBILE_SNAP_DURATION_MS);
+        const eased = 1 - (1 - t) ** 3;
+        const value = start + (target - start) * eased;
+
+        setVirtualScrollValue(value);
+
+        if (t < 1) {
+          snapFrameRef.current = window.requestAnimationFrame(frame);
+        }
+      }
+
+      snapFrameRef.current = window.requestAnimationFrame(frame);
     }
 
     function handleTouchStart(event: TouchEvent) {
@@ -361,6 +430,7 @@ export default function Work({
         return;
       }
 
+      cancelSnapAnimation();
       lastTouchYRef.current = touch.clientY;
 
       if (isInWorkSection()) {
@@ -385,10 +455,15 @@ export default function Work({
       event.preventDefault();
       const deltaY = lastTouchYRef.current - touch.clientY;
       lastTouchYRef.current = touch.clientY;
-      const nextValue = Math.max(0, virtualScroll.get() + deltaY * 0.55);
-      workScrollBridge.targetVirtualScroll = nextValue;
-      workScrollBridge.displayVirtualScroll = nextValue;
-      virtualScroll.set(nextValue);
+      setVirtualScrollValue(virtualScroll.get() + deltaY * 0.55);
+    }
+
+    function handleTouchEnd() {
+      if (!isMobileViewport() || !isWorkLockedRef.current || !isInWorkSection()) {
+        return;
+      }
+
+      snapMobileVirtualScroll();
     }
 
     sectionElement?.addEventListener("touchstart", handleTouchStart, {
@@ -397,9 +472,19 @@ export default function Work({
     sectionElement?.addEventListener("touchmove", handleTouchMove, {
       passive: false,
     });
+    sectionElement?.addEventListener("touchend", handleTouchEnd, {
+      passive: true,
+    });
+    sectionElement?.addEventListener("touchcancel", handleTouchEnd, {
+      passive: true,
+    });
+
     return () => {
+      cancelSnapAnimation();
       sectionElement?.removeEventListener("touchstart", handleTouchStart);
       sectionElement?.removeEventListener("touchmove", handleTouchMove);
+      sectionElement?.removeEventListener("touchend", handleTouchEnd);
+      sectionElement?.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [scrollYProgress, virtualScroll]);
 
@@ -488,7 +573,9 @@ export default function Work({
           <br />
           MANILA, PHILIPPINES
           <br />
-          <span className="font-normal text-white">{dubaiTime}</span>
+          <span className="font-normal text-white" suppressHydrationWarning>
+            {dubaiTime || "\u00a0"}
+          </span>
         </p>
       </div>
 
