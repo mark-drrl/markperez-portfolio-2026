@@ -1,0 +1,109 @@
+import { resetHomeScrollPosition } from "@/lib/workScrollBridge";
+
+export const HOME_SCROLL_TOP_KEY = "portfolio:home-scroll-top";
+export const HOME_SCROLL_WORKS_KEY = "portfolio:home-scroll-works";
+export const HOME_SCROLL_SYNC_EVENT = "portfolio:home-scroll-sync";
+
+export const HOME_WORK_SCROLL_PROGRESS = 0.64;
+
+export function dispatchHomeScrollSync() {
+  window.dispatchEvent(new CustomEvent(HOME_SCROLL_SYNC_EVENT));
+}
+
+export function requestHomeScrollTop() {
+  sessionStorage.removeItem(HOME_SCROLL_WORKS_KEY);
+  sessionStorage.setItem(HOME_SCROLL_TOP_KEY, "1");
+}
+
+export function requestHomeScrollWorks() {
+  sessionStorage.removeItem(HOME_SCROLL_TOP_KEY);
+  sessionStorage.setItem(HOME_SCROLL_WORKS_KEY, "1");
+}
+
+export function consumeHomeScrollWorksRequest() {
+  const shouldScrollWorks =
+    sessionStorage.getItem(HOME_SCROLL_WORKS_KEY) === "1";
+
+  if (shouldScrollWorks) {
+    sessionStorage.removeItem(HOME_SCROLL_WORKS_KEY);
+  }
+
+  return shouldScrollWorks;
+}
+
+export function consumeHomeScrollTopRequest() {
+  const shouldScrollTop = sessionStorage.getItem(HOME_SCROLL_TOP_KEY) === "1";
+
+  if (shouldScrollTop) {
+    sessionStorage.removeItem(HOME_SCROLL_TOP_KEY);
+  }
+
+  return shouldScrollTop;
+}
+
+export function getHomeScrollProgress(container?: HTMLElement | null) {
+  const scrollRoot = container ?? document.querySelector("main");
+
+  if (!scrollRoot) {
+    return 0;
+  }
+
+  const maxScroll = scrollRoot.scrollHeight - window.innerHeight;
+
+  if (maxScroll <= 0) {
+    return 0;
+  }
+
+  return Math.min(1, Math.max(0, window.scrollY / maxScroll));
+}
+
+export function scrollHomeToProgress(
+  progress: number,
+  container?: HTMLElement | null,
+) {
+  const scrollRoot = container ?? document.querySelector("main");
+
+  if (!scrollRoot) {
+    return 0;
+  }
+
+  const maxScroll = scrollRoot.scrollHeight - window.innerHeight;
+  const top = maxScroll * Math.min(1, Math.max(0, progress));
+
+  window.scrollTo({ top, left: 0, behavior: "auto" });
+
+  return getHomeScrollProgress(scrollRoot);
+}
+
+/** Reset to hero — used on `/` reload and explicit "back to home". */
+export function scrollHomeToTop(container?: HTMLElement | null) {
+  consumeHomeScrollTopRequest();
+  resetHomeScrollPosition();
+  return scrollHomeToProgress(0, container);
+}
+
+export function shouldLandOnWorkGallery() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  if (window.location.hash === "#works") {
+    return true;
+  }
+
+  return sessionStorage.getItem(HOME_SCROLL_WORKS_KEY) === "1";
+}
+
+/** Ensures hash + consumes the works landing flag before scrolling to Work. */
+export function prepareHomeScrollToWorks() {
+  consumeHomeScrollWorksRequest();
+  sessionStorage.removeItem(HOME_SCROLL_TOP_KEY);
+
+  if (window.location.hash !== "#works") {
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#works`,
+    );
+  }
+}

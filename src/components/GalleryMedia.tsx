@@ -15,22 +15,26 @@ interface GalleryImageProps {
   src: string;
   alt: string;
   isFocused: boolean;
+  className?: string;
   loading?: "eager" | "lazy";
+  freezeTransitions?: boolean;
 }
 
 export function GalleryImage({
   src,
   alt,
   isFocused,
+  className = "object-contain",
   loading = "lazy",
+  freezeTransitions = false,
 }: GalleryImageProps) {
   return (
     <motion.img
       src={src}
       alt={alt}
-      className="h-full w-full object-contain"
+      className={`h-full w-full ${className}`}
       animate={{ filter: isFocused ? focusedFilter : idleFilter }}
-      transition={colorTransition}
+      transition={freezeTransitions ? { duration: 0 } : colorTransition}
       loading={loading}
       decoding="async"
     />

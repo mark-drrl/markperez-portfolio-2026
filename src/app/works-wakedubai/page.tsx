@@ -1,6 +1,7 @@
 import LuxuryCursor from "@/components/LuxuryCursor";
 import WorksLsbGallery from "@/components/WorksLsbGallery";
 import WorksLsbPlayerControls from "@/components/WorksLsbPlayerControls";
+import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import Link from "next/link";
 
 const imageItems = [
@@ -28,13 +29,8 @@ const reelItems = [
   { type: "video", src: "/wakedubai/wd-7.mp4", className: "w-[90%] aspect-[9/16]" },
 ] as const;
 
-const socialButtons: readonly { label: string; href?: string }[] = [
-  { label: "ABOUT", href: "/about" },
-  { label: "CONTACT", href: "/contact" },
-  { label: "INSTAGRAM", href: "https://www.instagram.com/mxrkdrrl/" },
-  { label: "LINKEDIN", href: "https://www.linkedin.com/in/markdarrelperez/" },
-  { label: "BEHANCE", href: "https://www.behance.net/markdarrel" },
-];
+const socialButtons = workPageSocialLinks;
+
 
 export default function WorksWakeDubaiPage() {
   return (

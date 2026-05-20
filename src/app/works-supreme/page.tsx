@@ -1,5 +1,6 @@
 import WorksSorenGallery from "@/components/WorksSorenGallery";
 import LuxuryCursor from "@/components/LuxuryCursor";
+import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import Link from "next/link";
 
 const galleryItems = [
@@ -12,13 +13,8 @@ const galleryItems = [
   { type: "image", src: "/supreme/supreme-6.jpg", className: "mb-[32vh] w-[92%] aspect-[4/5]" },
 ] as const;
 
-const socialButtons: readonly { label: string; href?: string }[] = [
-  { label: "ABOUT", href: "/about" },
-  { label: "CONTACT", href: "/contact" },
-  { label: "INSTAGRAM", href: "https://www.instagram.com/mxrkdrrl/" },
-  { label: "LINKEDIN", href: "https://www.linkedin.com/in/markdarrelperez/" },
-  { label: "BEHANCE", href: "https://www.behance.net/markdarrel" },
-];
+const socialButtons = workPageSocialLinks;
+
 
 export default function WorksSupremePage() {
   return (

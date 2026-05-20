@@ -1,16 +1,41 @@
 "use client";
 
+import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import {
   motion,
   type MotionValue,
   useMotionValue,
   useMotionValueEvent,
-  useSpring,
   useTransform,
 } from "framer-motion";
-import { mobileStackColumn } from "@/constants/mobileSectionGrid";
+import { GalleryImage } from "@/components/GalleryMedia";
+import MarkPerezBrand from "@/components/MarkPerezBrand";
+import WorkSocialLinks from "@/components/WorkSocialLinks";
+import { workHeaderNavTone } from "@/lib/workSocialTone";
+import {
+  mobileStackCellBottom,
+  mobileStackCellMiddle,
+  mobileStackCellTop,
+} from "@/constants/mobileSectionGrid";
+import {
+  dispatchHomeScrollSync,
+  requestHomeScrollTop,
+} from "@/lib/homeScroll";
+import {
+  registerWorkScrollMotionValues,
+  resetHomeScrollPosition,
+  unlockWorkScroll,
+  unregisterWorkScrollMotionValues,
+  workScrollBridge,
+} from "@/lib/workScrollBridge";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const workImages = [
   "/work/portfolio-1.jpg",
@@ -47,7 +72,7 @@ const columns = [
   {
     left: "calc((100% - 1vh) / 3 + 0.5vh)",
     width: "calc((100% - 1vh) / 3)",
-    speed: 0.60,
+    speed: 0.56,
     initialY: -48,
     tiles: [
       { height: 60.5, image: 3 },
@@ -59,7 +84,7 @@ const columns = [
   {
     left: "calc(((100% - 1vh) / 3) * 2 + 1vh)",
     width: "calc((100% - 1vh) / 3)",
-    speed: 1.10,
+    speed: 0.84,
     initialY: 0,
     tiles: [
       { height: 57.5, image: 5 },
@@ -69,18 +94,47 @@ const columns = [
   },
 ] as const;
 
-const mobileTileHeight = 58;
-const mobileGap = 0.5;
-const mobileCycleHeight =
-  workImages.length * mobileTileHeight + (workImages.length - 1) * mobileGap;
-
-const socialButtons: readonly { label: string; href?: string }[] = [
-  { label: "ABOUT", href: "/about" },
-  { label: "CONTACT", href: "/contact" },
-  { label: "INSTAGRAM", href: "https://www.instagram.com/mxrkdrrl/" },
-  { label: "LINKEDIN", href: "https://www.linkedin.com/in/markdarrelperez/" },
-  { label: "BEHANCE", href: "https://www.behance.net/markdarrel" },
+const MOBILE_SCROLL_STEP = 88;
+const mobileWorkSlots = [
+  { className: mobileStackCellTop, offset: 0 },
+  { className: mobileStackCellMiddle, offset: 1 },
+  { className: mobileStackCellBottom, offset: 2 },
 ] as const;
+
+function getWorkHref(src: string) {
+  if (src === "/work/portfolio-1.jpg") return "/works-centurionv1";
+  if (src === "/work/portfolio-2.png") return "/works-lifestyle";
+  if (src === "/work/portfolio-3.jpg") return "/works-soren";
+  if (src === "/work/portfolio-4.jpg") return "/works-lsb";
+  if (src === "/work/portfolio-5.jpg") return "/works-wakedubai";
+  if (src === "/work/portfolio-6.jpg") return "/works-nautique";
+  if (src === "/work/portfolio-7.jpg") return "/works-interior";
+  if (src === "/work/portfolio-8.jpg") return "/works-atm";
+  if (src === "/work/portfolio-9.jpg") return "/works-phase5page";
+  if (src === "/work/portfolio-10.jpg") return "/works-supreme";
+  return null;
+}
+
+function WorkImageLink({ src, children }: { src: string; children: ReactNode }) {
+  const href = getWorkHref(src);
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        prefetch={false}
+        className="block h-full w-full"
+        data-no-magnetic
+      >
+        {children}
+      </Link>
+    );
+  }
+
+  return <div className="h-full w-full">{children}</div>;
+}
+
+const socialButtons = workPageSocialLinks;
 
 interface WorkProps {
   opacity: MotionValue<number>;
@@ -89,175 +143,138 @@ interface WorkProps {
   scrollYProgress: MotionValue<number>;
 }
 
-interface WorkColumnProps {
-  column: (typeof columns)[number];
-  virtualScroll: MotionValue<number>;
+function computeColumnTranslateVh(
+  virtualOffset: number,
+  column: (typeof columns)[number],
+) {
+  const cycleHeight = columnCycleHeight(column.tiles);
+  const travel = (virtualOffset / 900) * column.speed * cycleHeight;
+  const rawOffset =
+    ((travel % cycleHeight) + cycleHeight) % cycleHeight;
+
+  return column.initialY - cycleHeight - rawOffset;
 }
 
 function WorkImage({ src }: { src: string }) {
-  const image = (
-    <div className="group relative h-full w-full">
-      <img
-        src={src}
-        alt=""
-        className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] md:transition-[filter] md:duration-[1400ms] md:ease-[cubic-bezier(0.16,1,0.3,1)] max-md:grayscale md:group-hover:grayscale-0 md:group-hover:contrast-110 md:group-hover:brightness-105"
-        loading="lazy"
-        decoding="async"
-      />
-    </div>
-  );
-
-  if (src === "/work/portfolio-1.jpg") {
-    return (
-      <Link href="/works-centurionv1" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-2.png") {
-    return (
-      <Link href="/works-lifestyle" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-3.jpg") {
-    return (
-      <Link href="/works-soren" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-5.jpg") {
-    return (
-      <Link href="/works-wakedubai" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-4.jpg") {
-    return (
-      <Link href="/works-lsb" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-6.jpg") {
-    return (
-      <Link href="/works-nautique" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-7.jpg") {
-    return (
-      <Link href="/works-interior" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-10.jpg") {
-    return (
-      <Link href="/works-supreme" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-8.jpg") {
-    return (
-      <Link href="/works-atm" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  if (src === "/work/portfolio-9.jpg") {
-    return (
-      <Link href="/works-phase5page" className="block h-full w-full">
-        {image}
-      </Link>
-    );
-  }
-
-  return image;
-}
-
-function WorkColumn({
-  column,
-  virtualScroll,
-}: WorkColumnProps) {
-  const cycleHeight = columnCycleHeight(column.tiles);
-  const loopedTiles = [...column.tiles, ...column.tiles, ...column.tiles];
-  const y = useTransform(virtualScroll, (latest) => {
-    const travel = (latest / 900) * column.speed * cycleHeight;
-    const rawOffset = ((travel % cycleHeight) + cycleHeight) % cycleHeight;
-    return `${column.initialY - cycleHeight - rawOffset}vh`;
-  });
-
   return (
-    <motion.div
-      className="absolute top-0 h-full transform-gpu"
-      style={{
-        left: column.left,
-        width: column.width,
-        y,
-      }}
-    >
-      <div className="flex flex-col gap-[0.5vh]">
-        {loopedTiles.map((tile, tileIndex) => (
-          <div
-            key={`${tile.image}-${tileIndex}`}
-            className="w-full overflow-hidden bg-neutral-300"
-            style={{
-              height: `${tile.height}vh`,
-            }}
-          >
-            <WorkImage src={workImages[tile.image]} />
-          </div>
-        ))}
+    <WorkImageLink src={src}>
+      <div className="group relative h-full w-full">
+        <img
+          src={src}
+          alt=""
+          className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
+          loading="lazy"
+          decoding="async"
+        />
       </div>
-    </motion.div>
+    </WorkImageLink>
   );
 }
 
-function WorkMobileColumn({
+function WorkColumnsDesktop({
   virtualScroll,
 }: {
   virtualScroll: MotionValue<number>;
 }) {
-  const loopedImages = [...workImages, ...workImages, ...workImages];
-  const y = useTransform(virtualScroll, (latest) => {
-    const travel = (latest / 900) * 0.55 * mobileCycleHeight;
-    const rawOffset =
-      ((travel % mobileCycleHeight) + mobileCycleHeight) % mobileCycleHeight;
-    return `${-mobileCycleHeight - rawOffset}vh`;
+  const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  const applyColumnTransforms = useCallback((virtualOffset: number) => {
+    columns.forEach((column, columnIndex) => {
+      const columnElement = columnRefs.current[columnIndex];
+
+      if (!columnElement) {
+        return;
+      }
+
+      const translateVh = computeColumnTranslateVh(virtualOffset, column);
+      columnElement.style.transform = `translate3d(0, ${translateVh}vh, 0)`;
+    });
+  }, []);
+
+  useMotionValueEvent(virtualScroll, "change", applyColumnTransforms);
+
+  useEffect(() => {
+    applyColumnTransforms(virtualScroll.get());
+  }, [virtualScroll, applyColumnTransforms]);
+
+  return (
+    <div className="hidden h-full w-full md:block">
+      {columns.map((column, columnIndex) => {
+        const loopedTiles = [...column.tiles, ...column.tiles, ...column.tiles];
+
+        return (
+          <div
+            key={`column-${columnIndex}`}
+            ref={(element) => {
+              columnRefs.current[columnIndex] = element;
+            }}
+            className="absolute top-0 h-full will-change-transform"
+            style={{
+              left: column.left,
+              width: column.width,
+              transform: `translate3d(0, ${computeColumnTranslateVh(virtualScroll.get(), column)}vh, 0)`,
+            }}
+          >
+            <div className="flex flex-col gap-[0.5vh]">
+              {loopedTiles.map((tile, tileIndex) => (
+                <div
+                  key={`${tile.image}-${tileIndex}`}
+                  className="w-full overflow-hidden bg-neutral-300"
+                  style={{ height: `${tile.height}vh` }}
+                >
+                  <WorkImage src={workImages[tile.image]} />
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function WorkMobileStack({
+  virtualScroll,
+}: {
+  virtualScroll: MotionValue<number>;
+}) {
+  const [baseIndex, setBaseIndex] = useState(0);
+
+  useMotionValueEvent(virtualScroll, "change", (latest) => {
+    const next =
+      ((Math.round(latest / MOBILE_SCROLL_STEP) % workImages.length) +
+        workImages.length) %
+      workImages.length;
+
+    setBaseIndex((current) => (current === next ? current : next));
   });
 
   return (
-    <motion.div
-      className={`${mobileStackColumn} transform-gpu`}
-      style={{ y }}
-    >
-      <div className="flex flex-col gap-[0.5vh]">
-        {loopedImages.map((src, tileIndex) => (
+    <div className="absolute inset-0 md:hidden">
+      {mobileWorkSlots.map((slot) => {
+        const src =
+          workImages[
+            (baseIndex + slot.offset + workImages.length) % workImages.length
+          ];
+        const isFocused = slot.offset === 1;
+
+        return (
           <div
-            key={`${src}-${tileIndex}`}
-            className="w-full overflow-hidden bg-neutral-300"
-            style={{ height: `${mobileTileHeight}vh` }}
+            key={slot.className}
+            className={`absolute overflow-hidden bg-neutral-300 ${slot.className}`}
           >
-            <WorkImage src={src} />
+            <WorkImageLink src={src}>
+              <GalleryImage
+                src={src}
+                alt=""
+                isFocused={isFocused}
+                className="object-cover"
+              />
+            </WorkImageLink>
           </div>
-        ))}
-      </div>
-    </motion.div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -272,27 +289,24 @@ export default function Work({
   const isWorkLockedRef = useRef(false);
   const workLockScrollYRef = useRef(0);
   const lastTouchYRef = useRef(0);
-  const scrollLockFrameRef = useRef(0);
   const virtualScroll = useMotionValue(0);
-  const mobileEasedVirtualScroll = useSpring(virtualScroll, {
-    damping: 52,
-    stiffness: 200,
-    mass: 0.55,
-    restDelta: 0.03,
-  });
-  const desktopEasedVirtualScroll = useSpring(virtualScroll, {
-    damping: 50,
-    stiffness: 240,
-    mass: 0.45,
-    restDelta: 0.05,
-  });
+  const socialNavTone = useTransform(virtualScroll, (offset) =>
+    workHeaderNavTone(offset, {
+      isMobile:
+        typeof window !== "undefined" &&
+        window.matchMedia("(max-width: 767px)").matches,
+      imageCount: workImages.length,
+      leftColumn: columns[0],
+    }),
+  );
 
-  useMotionValueEvent(scrollYProgress, "change", (latest) => {
-    if (latest < 0.63) {
-      isWorkLockedRef.current = false;
-      workLockScrollYRef.current = 0;
-    }
-  });
+  useEffect(() => {
+    registerWorkScrollMotionValues(scrollYProgress, virtualScroll);
+
+    return () => {
+      unregisterWorkScrollMotionValues();
+    };
+  }, [scrollYProgress, virtualScroll]);
 
   useEffect(() => {
     const formatter = new Intl.DateTimeFormat("en-US", {
@@ -325,73 +339,6 @@ export default function Work({
       return scrollYProgress.get() >= 0.64;
     }
 
-    function unlockWorkScroll() {
-      isWorkLockedRef.current = false;
-      workLockScrollYRef.current = 0;
-    }
-
-    function lockWorkScroll() {
-      if (!isInWorkSection()) {
-        unlockWorkScroll();
-        return false;
-      }
-
-      isWorkLockedRef.current = true;
-      workLockScrollYRef.current = Math.max(
-        workLockScrollYRef.current,
-        window.scrollY,
-      );
-
-      return true;
-    }
-
-    function lockPageScroll() {
-      if (!isInWorkSection() || !isWorkLockedRef.current) {
-        return;
-      }
-
-      if (Math.abs(window.scrollY - workLockScrollYRef.current) <= 2) {
-        return;
-      }
-
-      window.scrollTo(0, workLockScrollYRef.current);
-    }
-
-    function schedulePageScrollLock() {
-      if (scrollLockFrameRef.current) {
-        return;
-      }
-
-      scrollLockFrameRef.current = window.requestAnimationFrame(() => {
-        scrollLockFrameRef.current = 0;
-        lockPageScroll();
-      });
-    }
-
-    function handleWheel(event: WheelEvent) {
-      if (isMobileViewport()) {
-        return;
-      }
-
-      if (!lockWorkScroll()) {
-        return;
-      }
-
-      const currentVirtualScroll = virtualScroll.get();
-
-      if (event.deltaY < 0 && currentVirtualScroll <= 0) {
-        unlockWorkScroll();
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      event.stopImmediatePropagation();
-
-      virtualScroll.set(Math.max(0, currentVirtualScroll + event.deltaY * 0.85));
-      schedulePageScrollLock();
-    }
-
     function handleTouchStart(event: TouchEvent) {
       const touch = event.touches[0];
 
@@ -400,7 +347,11 @@ export default function Work({
       }
 
       lastTouchYRef.current = touch.clientY;
-      lockWorkScroll();
+
+      if (isInWorkSection()) {
+        isWorkLockedRef.current = true;
+        workLockScrollYRef.current = window.scrollY;
+      }
     }
 
     function handleTouchMove(event: TouchEvent) {
@@ -410,30 +361,21 @@ export default function Work({
         return;
       }
 
-      event.preventDefault();
-      const deltaY = lastTouchYRef.current - touch.clientY;
-      lastTouchYRef.current = touch.clientY;
-      virtualScroll.set(virtualScroll.get() + deltaY * 0.55);
-
-      schedulePageScrollLock();
-    }
-
-    function handleScroll() {
       if (!isInWorkSection()) {
+        isWorkLockedRef.current = false;
         unlockWorkScroll();
         return;
       }
 
-      if (isWorkLockedRef.current) {
-        schedulePageScrollLock();
-      }
+      event.preventDefault();
+      const deltaY = lastTouchYRef.current - touch.clientY;
+      lastTouchYRef.current = touch.clientY;
+      const nextValue = Math.max(0, virtualScroll.get() + deltaY * 0.55);
+      workScrollBridge.targetVirtualScroll = nextValue;
+      workScrollBridge.displayVirtualScroll = nextValue;
+      virtualScroll.set(nextValue);
     }
 
-    window.addEventListener("wheel", handleWheel, {
-      passive: false,
-      capture: true,
-    });
-    window.addEventListener("scroll", handleScroll, { passive: true });
     sectionElement?.addEventListener("touchstart", handleTouchStart, {
       passive: true,
     });
@@ -442,21 +384,26 @@ export default function Work({
     });
 
     return () => {
-      window.removeEventListener("wheel", handleWheel, { capture: true });
-      window.removeEventListener("scroll", handleScroll);
       sectionElement?.removeEventListener("touchstart", handleTouchStart);
       sectionElement?.removeEventListener("touchmove", handleTouchMove);
-      window.cancelAnimationFrame(scrollLockFrameRef.current);
     };
   }, [scrollYProgress, virtualScroll]);
 
   function handleBackToHome() {
     isWorkLockedRef.current = false;
     workLockScrollYRef.current = 0;
-    window.cancelAnimationFrame(scrollLockFrameRef.current);
-    scrollLockFrameRef.current = 0;
-    virtualScroll.set(0);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestHomeScrollTop();
+
+    if (window.location.pathname === "/") {
+      window.history.replaceState(null, "", "/");
+      resetHomeScrollPosition();
+      window.requestAnimationFrame(() => {
+        dispatchHomeScrollSync();
+      });
+      return;
+    }
+
+    window.location.href = "/";
   }
 
   return (
@@ -469,24 +416,12 @@ export default function Work({
         pointerEvents,
       }}
     >
-      <motion.div
-        className="absolute inset-0 h-full w-full overflow-hidden will-change-transform"
-      >
-        <div className="hidden h-full w-full md:block">
-          {columns.map((column, columnIndex) => (
-            <WorkColumn
-              key={`column-${columnIndex}`}
-              column={column}
-              virtualScroll={desktopEasedVirtualScroll}
-            />
-          ))}
-        </div>
-        <div className="block h-full w-full md:hidden">
-          <WorkMobileColumn virtualScroll={mobileEasedVirtualScroll} />
-        </div>
+      <motion.div className="absolute inset-0 h-full w-full overflow-hidden">
+        <WorkColumnsDesktop virtualScroll={virtualScroll} />
+        <WorkMobileStack virtualScroll={virtualScroll} />
       </motion.div>
 
-      <div className="pointer-events-none absolute inset-0 bg-[#EAEAEA]/10" />
+      <div className="pointer-events-none absolute inset-0 z-[8] bg-[#EAEAEA]/10" />
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-[8] h-44"
         style={{
@@ -500,6 +435,7 @@ export default function Work({
           maskImage:
             "linear-gradient(to bottom, black 0%, black 25%, rgba(0,0,0,0.64) 60%, rgba(0,0,0,0.18) 88%, transparent 100%)",
         }}
+        aria-hidden="true"
       />
       <div
         className="pointer-events-none absolute inset-x-0 bottom-0 z-[8] h-48"
@@ -514,36 +450,19 @@ export default function Work({
           maskImage:
             "linear-gradient(to top, black 0%, black 25%, rgba(0,0,0,0.66) 62%, rgba(0,0,0,0.18) 90%, transparent 100%)",
         }}
+        aria-hidden="true"
       />
 
       <div className="pointer-events-none absolute inset-x-8 top-8 z-20 grid grid-cols-[1fr_auto] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white md:grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)]">
         <div className="font-semibold leading-relaxed">
-          <p className="font-neue">
-            MARK <span className="text-[#9F1F2E]">PEREZ</span>
-          </p>
-          <div className="mt-1 flex flex-col items-start gap-0.5 text-neutral-400">
-            {socialButtons.map((item) =>
-              item.href ? (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  target={item.href.startsWith("http") ? "_blank" : undefined}
-                  rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-                  className="pointer-events-auto tracking-[0.2em] transition-colors hover:text-white [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace]"
-                >
-                  {item.label}
-                </a>
-              ) : (
-                <button
-                  key={item.label}
-                  type="button"
-                  className="pointer-events-auto tracking-[0.2em] transition-colors hover:text-white [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace]"
-                >
-                  {item.label}
-                </button>
-              ),
-            )}
-          </div>
+          <MarkPerezBrand
+            variant="onDark"
+            onActivate={() => {
+              isWorkLockedRef.current = false;
+              workLockScrollYRef.current = 0;
+            }}
+          />
+          <WorkSocialLinks links={socialButtons} toneSource={socialNavTone} />
         </div>
         <p className="font-neue hidden max-w-[520px] font-semibold leading-relaxed uppercase tracking-[0.08em] text-white md:block">
           Full-stack Creative Specialist bridging high-end cinematography,

@@ -1,6 +1,7 @@
 import LuxuryCursor from "@/components/LuxuryCursor";
 import WorksNautiqueGallery from "@/components/WorksNautiqueGallery";
 import WorksNautiquePlayerControls from "@/components/WorksNautiquePlayerControls";
+import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import Link from "next/link";
 
 const galleryItems = [
@@ -11,13 +12,8 @@ const galleryItems = [
   },
 ] as const;
 
-const socialButtons: readonly { label: string; href?: string }[] = [
-  { label: "ABOUT", href: "/about" },
-  { label: "CONTACT", href: "/contact" },
-  { label: "INSTAGRAM", href: "https://www.instagram.com/mxrkdrrl/" },
-  { label: "LINKEDIN", href: "https://www.linkedin.com/in/markdarrelperez/" },
-  { label: "BEHANCE", href: "https://www.behance.net/markdarrel" },
-];
+const socialButtons = workPageSocialLinks;
+
 
 export default function WorksPhase5Page() {
   return (

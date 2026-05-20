@@ -1,5 +1,6 @@
 import WorksSorenGallery from "@/components/WorksSorenGallery";
 import LuxuryCursor from "@/components/LuxuryCursor";
+import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import Link from "next/link";
 
 const galleryItems = [
@@ -18,13 +19,8 @@ const galleryItems = [
   { type: "image", src: "/soren/soren-8.jpg", className: "mx-auto mb-[32vh] w-[86%] aspect-[3/2]" },
 ] as const;
 
-const socialButtons: readonly { label: string; href?: string }[] = [
-  { label: "ABOUT", href: "/about" },
-  { label: "CONTACT", href: "/contact" },
-  { label: "INSTAGRAM", href: "https://www.instagram.com/mxrkdrrl/" },
-  { label: "LINKEDIN", href: "https://www.linkedin.com/in/markdarrelperez/" },
-  { label: "BEHANCE", href: "https://www.behance.net/markdarrel" },
-];
+const socialButtons = workPageSocialLinks;
+
 
 export default function WorksSorenPage() {
   return (

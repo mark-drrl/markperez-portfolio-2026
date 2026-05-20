@@ -1,23 +1,39 @@
 "use client";
 
-import Convey from "@/components/Convey";
-import Create from "@/components/Create";
-import Curate from "@/components/Curate";
+import HomeDesktopStack from "@/components/home/HomeDesktopStack";
+import HomeMobileStack from "@/components/home/HomeMobileStack";
 import FluidDistortion from "@/components/FluidDistortion";
-import Hero from "@/components/Hero";
 import ProceduralGrain from "@/components/ProceduralGrain";
-import Work from "@/components/work";
+import { useHomeScrollProgress } from "@/hooks/useHomeScrollProgress";
+import { useFinePointer } from "@/hooks/useFinePointer";
+import {
+  HOME_SCROLL_SYNC_EVENT,
+  HOME_WORK_SCROLL_PROGRESS,
+  prepareHomeScrollToWorks,
+  scrollHomeToProgress,
+  scrollHomeToTop,
+  shouldLandOnWorkGallery,
+} from "@/lib/homeScroll";
+import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
+import Lenis from "lenis";
+import {
+  handleWorkLenisVirtualScroll,
+  isWorkGalleryScrollActive,
+  syncWorkScrollEngagement,
+  tickWorkVirtualScrollSmoothing,
+  unlockWorkScroll,
+  workScrollBridge,
+} from "@/lib/workScrollBridge";
 import {
   AnimatePresence,
   motion,
   useMotionValue,
   useSpring,
-  useScroll,
+  useMotionValueEvent,
   useTransform,
 } from "framer-motion";
-import { useFinePointer } from "@/hooks/useFinePointer";
-import Lenis from "lenis";
-import { type CSSProperties, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 function LastPage({ onClose }: { onClose: () => void }) {
   return (
@@ -37,11 +53,24 @@ function LastPage({ onClose }: { onClose: () => void }) {
   );
 }
 
+function workThresholdForViewport() {
+  if (typeof window === "undefined") {
+    return HOME_WORK_SCROLL_PROGRESS;
+  }
+
+  return window.matchMedia("(min-width: 768px)").matches
+    ? HOME_WORK_SCROLL_PROGRESS
+    : MOBILE_WORK_SCROLL_PROGRESS;
+}
+
 export default function Home() {
+  const pathname = usePathname();
   const isFinePointer = useFinePointer();
   const [isLastPageOpen, setIsLastPageOpen] = useState(false);
   const [isHoveringClickable, setIsHoveringClickable] = useState(false);
+  const [isInWorkSection, setIsInWorkSection] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
+  const inWorkRef = useRef(false);
   const activeMagneticElementRef = useRef<HTMLElement | null>(null);
   const cursorX = useMotionValue(-100);
   const cursorY = useMotionValue(-100);
@@ -55,144 +84,96 @@ export default function Home() {
     stiffness: 180,
     mass: 0.55,
   });
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"],
+  const scrollYProgress = useHomeScrollProgress(containerRef);
+
+  const syncHomeScrollFromProgress = useCallback((progress: number) => {
+    const inWork = progress >= workThresholdForViewport();
+
+    if (inWork !== inWorkRef.current) {
+      inWorkRef.current = inWork;
+      setIsInWorkSection(inWork);
+    }
+  }, []);
+
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    syncHomeScrollFromProgress(latest);
   });
 
-  const heroOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.004, 0.038, 0.052, 1],
-    [1, 1, 1, 0, 0],
-  );
-  const heroBlur = useTransform(
-    scrollYProgress,
-    [0, 0.004, 0.038, 0.052, 1],
-    ["blur(0px)", "blur(0px)", "blur(18px)", "blur(42px)", "blur(42px)"],
-  );
-  const conveyOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.004, 0.01, 0.14, 0.18, 1],
-    [0, 0, 1, 1, 0, 0],
-  );
-  const conveyBlur = useTransform(
-    scrollYProgress,
-    [0, 0.004, 0.024, 0.052, 0.158, 0.18, 1],
-    [
-      "blur(34px)",
-      "blur(34px)",
-      "blur(12px)",
-      "blur(0px)",
-      "blur(0px)",
-      "blur(40px)",
-      "blur(40px)",
-    ],
-  );
-  const heroToConveySweep = useTransform(
-    scrollYProgress,
-    [0, 0.004, 0.052, 1],
-    [0, 0, 100, 100],
-  );
-  const conveyRevealMask = useTransform(
-    heroToConveySweep,
-    (value) => {
-      if (value >= 99) {
-        return "none";
+  useLayoutEffect(() => {
+    if (pathname !== "/") {
+      return;
+    }
+
+    window.history.scrollRestoration = "manual";
+
+    const main = containerRef.current;
+
+    if (shouldLandOnWorkGallery()) {
+      prepareHomeScrollToWorks();
+      const progress = scrollHomeToProgress(
+        workThresholdForViewport(),
+        main,
+      );
+      syncHomeScrollFromProgress(progress);
+      return;
+    }
+
+    const progress = scrollHomeToTop(main);
+    syncHomeScrollFromProgress(progress);
+  }, [pathname, syncHomeScrollFromProgress]);
+
+  useEffect(() => {
+    if (pathname !== "/") {
+      return;
+    }
+
+    function handleHomeScrollSync() {
+      const main = containerRef.current;
+
+      if (shouldLandOnWorkGallery()) {
+        prepareHomeScrollToWorks();
+        syncHomeScrollFromProgress(
+          scrollHomeToProgress(workThresholdForViewport(), main),
+        );
+        return;
       }
 
-      const solidEnd = Math.max(0, value - 8);
-      const softMid = value + 10;
-      const featherEnd = value + 28;
+      syncHomeScrollFromProgress(scrollHomeToTop(main));
+    }
 
-      return `linear-gradient(to top, black 0%, black ${solidEnd}%, rgba(0,0,0,0.72) ${softMid}%, transparent ${featherEnd}%, transparent 100%)`;
-    },
-  );
-  const glassSweepMask = useTransform(
-    heroToConveySweep,
-    (value) => {
-      const leadingEdge = value - 42;
-      const fullStart = value - 8;
-      const fullEnd = value + 18;
-      const trailingEdge = value + 62;
+    function handlePageShow(event: PageTransitionEvent) {
+      if (!event.persisted) {
+        return;
+      }
 
-      return `linear-gradient(to top, transparent 0%, transparent ${leadingEdge}%, rgba(0,0,0,0.45) ${value - 24}%, black ${fullStart}%, black ${fullEnd}%, rgba(0,0,0,0.45) ${value + 38}%, transparent ${trailingEdge}%, transparent 100%)`;
-    },
-  );
-  const glassSweepOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.003, 0.014, 0.044, 0.052, 1],
-    [0, 0, 1, 1, 0, 0],
-  );
-  const conveyPointerEvents = useTransform(conveyOpacity, (value) =>
-    value > 0.9 ? "auto" : "none",
-  );
-  const createOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.14, 0.18, 0.52, 0.58, 1],
-    [0, 0, 1, 1, 0, 0],
-  );
-  const createBlur = useTransform(
-    scrollYProgress,
-    [0, 0.14, 0.18, 0.52, 0.58, 1],
-    [
-      "blur(4px)",
-      "blur(4px)",
-      "blur(0px)",
-      "blur(0px)",
-      "blur(8px)",
-      "blur(8px)",
-    ],
-  );
-  const createPointerEvents = useTransform(createOpacity, (value) =>
-    value > 0.9 ? "auto" : "none",
-  );
-  const curateOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.34, 0.42, 1],
-    [0, 0, 1, 1],
-  );
-  const curateBlur = useTransform(
-    scrollYProgress,
-    [0, 0.34, 0.42, 1],
-    [
-      "blur(24px)",
-      "blur(24px)",
-      "blur(0px)",
-      "blur(0px)",
-    ],
-  );
-  const curatePointerEvents = useTransform(curateOpacity, (value) =>
-    value > 0.9 ? "auto" : "none",
-  );
-  const curateVisibility = useTransform(
-    scrollYProgress,
-    (latest): CSSProperties["visibility"] =>
-      latest > 0.34 ? "visible" : "hidden",
-  );
-  const workOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.56, 0.64, 1],
-    [0, 0, 1, 1],
-  );
-  const workBlur = useTransform(
-    scrollYProgress,
-    [0, 0.56, 0.64, 1],
-    ["blur(28px)", "blur(28px)", "blur(0px)", "blur(0px)"],
-  );
-  const workGlassOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.56, 0.6, 0.64, 1],
-    [0, 0, 1, 0, 0],
-  );
-  const workPointerEvents = useTransform(workOpacity, (value) =>
-    value > 0.9 ? "auto" : "none",
-  );
+      handleHomeScrollSync();
+    }
+
+    window.addEventListener(HOME_SCROLL_SYNC_EVENT, handleHomeScrollSync);
+    window.addEventListener("pageshow", handlePageShow);
+
+    const rafId = window.requestAnimationFrame(() => {
+      handleHomeScrollSync();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.removeEventListener(HOME_SCROLL_SYNC_EVENT, handleHomeScrollSync);
+      window.removeEventListener("pageshow", handlePageShow);
+    };
+  }, [pathname, syncHomeScrollFromProgress]);
+
   const grainOpacity = useTransform(
     scrollYProgress,
     [0, 0.58, 0.64, 1],
     [0.25, 0.25, 0, 0],
   );
-  const scrollProgressScaleX = useTransform(
+  const scrollProgressScaleXMobile = useTransform(
+    scrollYProgress,
+    [0, MOBILE_WORK_SCROLL_PROGRESS, 1],
+    [0, 1, 1],
+  );
+  const scrollProgressScaleXDesktop = useTransform(
     scrollYProgress,
     [0, 0.64, 1],
     [0, 1, 1],
@@ -202,40 +183,62 @@ export default function Home() {
     [0, 0.6, 0.64, 1],
     [1, 1, 0, 0],
   );
-  const heroVisibility = useTransform(
-    scrollYProgress,
-    (latest): CSSProperties["visibility"] =>
-      latest > 0.06 ? "hidden" : "visible",
-  );
-  const heroPointerEvents = useTransform(
-    scrollYProgress,
-    (latest): CSSProperties["pointerEvents"] =>
-      latest > 0.052 ? "none" : "auto",
-  );
 
   useEffect(() => {
-    const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    if (pathname !== "/") {
+      workScrollBridge.lenis = null;
+      return;
+    }
+
+    const desktopQuery = window.matchMedia("(min-width: 768px)");
+
+    function teardown() {
+      workScrollBridge.lenis = null;
+      unlockWorkScroll();
+    }
+
+    if (!desktopQuery.matches) {
+      teardown();
+      return;
+    }
+
     const lenis = new Lenis({
-      lerp: isCoarsePointer ? 1 : 0.075,
-      smoothWheel: !isCoarsePointer,
+      lerp: 0.075,
+      smoothWheel: true,
+      virtualScroll: handleWorkLenisVirtualScroll,
     });
     let animationFrameId = 0;
 
+    workScrollBridge.lenis = lenis;
+
     function raf(time: number) {
       lenis.raf(time);
+      syncWorkScrollEngagement();
+      tickWorkVirtualScrollSmoothing(time);
       animationFrameId = requestAnimationFrame(raf);
     }
 
     animationFrameId = requestAnimationFrame(raf);
 
+    const onBreakpointChange = () => {
+      if (!desktopQuery.matches) {
+        teardown();
+        lenis.destroy();
+      }
+    };
+
+    desktopQuery.addEventListener("change", onBreakpointChange);
+
     return () => {
+      desktopQuery.removeEventListener("change", onBreakpointChange);
       cancelAnimationFrame(animationFrameId);
       lenis.destroy();
+      teardown();
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
-    if (!isFinePointer) {
+    if (pathname !== "/" || !isFinePointer) {
       document
         .querySelectorAll<HTMLElement>(
           '[data-cursor-interactive="true"], a[href], button',
@@ -265,13 +268,22 @@ export default function Home() {
       cursorX.set(event.clientX);
       cursorY.set(event.clientY);
 
+      if (isWorkGalleryScrollActive()) {
+        setIsHoveringClickable(false);
+        resetMagneticElement();
+        return;
+      }
+
       const target = event.target;
       const clickableElement =
         target instanceof Element
           ? target.closest<HTMLElement>(clickableSelector)
           : null;
 
-      if (!clickableElement) {
+      if (
+        !clickableElement ||
+        clickableElement.closest("[data-no-magnetic]")
+      ) {
         setIsHoveringClickable(false);
         resetMagneticElement();
         return;
@@ -312,88 +324,49 @@ export default function Home() {
       window.removeEventListener("pointerleave", handlePointerLeave);
       resetMagneticElement();
     };
-  }, [cursorX, cursorY, isFinePointer]);
+  }, [cursorX, cursorY, isFinePointer, pathname]);
 
   return (
-    <main ref={containerRef} className="relative h-[1800vh] bg-[#EAEAEA] md:h-[3600vh]">
+    <main
+      ref={containerRef}
+      className="relative h-[2100vh] bg-[#EAEAEA] md:h-[3600vh]"
+    >
       <span
         id="works"
-        className="pointer-events-none absolute top-[64%] h-px w-px"
+        className="pointer-events-none absolute top-[78%] h-px w-px md:top-[64%]"
         aria-hidden="true"
       />
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        <motion.div className="absolute inset-0 z-10 w-full h-screen">
-          <Hero
-            opacity={heroOpacity}
-            blur={heroBlur}
-            visibility={heroVisibility}
-            pointerEvents={heroPointerEvents}
-          />
-        </motion.div>
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-20 w-full h-screen"
-          style={{
-            WebkitMaskImage: conveyRevealMask,
-            maskImage: conveyRevealMask,
-          }}
-        >
-          <Convey
-            entranceOpacity={conveyOpacity}
-            entranceBlur={conveyBlur}
-            pointerEvents={conveyPointerEvents}
-            scrollYProgress={scrollYProgress}
-          />
-        </motion.div>
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-[25] bg-[#EAEAEA]/35 backdrop-blur-[72px]"
-          style={{
-            opacity: glassSweepOpacity,
-            WebkitMaskImage: glassSweepMask,
-            maskImage: glassSweepMask,
-          }}
-          aria-hidden="true"
-        />
-        <motion.div className="pointer-events-none absolute inset-0 z-30 w-full h-screen">
-          <Create
-            entranceOpacity={createOpacity}
-            entranceBlur={createBlur}
-            pointerEvents={createPointerEvents}
-            scrollYProgress={scrollYProgress}
-          />
-        </motion.div>
-        <motion.div className="pointer-events-none absolute inset-0 z-40 w-full h-screen">
-          <Curate
-            opacity={curateOpacity}
-            blur={curateBlur}
-            pointerEvents={curatePointerEvents}
-            visibility={curateVisibility}
-            scrollYProgress={scrollYProgress}
-          />
-        </motion.div>
-        <motion.div className="pointer-events-none absolute inset-0 z-[45] w-full h-screen">
-          <Work
-            opacity={workOpacity}
-            blur={workBlur}
-            pointerEvents={workPointerEvents}
-            scrollYProgress={scrollYProgress}
-          />
-        </motion.div>
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-[46] hidden bg-[#EAEAEA]/20 backdrop-blur-[36px] md:block"
-          style={{ opacity: workGlassOpacity }}
-          aria-hidden="true"
+        <HomeMobileStack scrollYProgress={scrollYProgress} />
+        <HomeDesktopStack
+          scrollYProgress={scrollYProgress}
+          showWhenNotInWork={!isInWorkSection}
         />
       </div>
       <motion.div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] h-1.5 origin-left bg-[#9F1F2E]"
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] h-1.5 origin-left bg-[#9F1F2E] max-md:hidden"
         style={{
           opacity: scrollProgressOpacity,
-          scaleX: scrollProgressScaleX,
+          scaleX: scrollProgressScaleXDesktop,
         }}
         aria-hidden="true"
       />
-      <ProceduralGrain opacity={grainOpacity} />
-      <FluidDistortion progress={scrollYProgress} />
+      <motion.div
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] h-1.5 origin-left bg-[#9F1F2E] md:hidden"
+        style={{
+          opacity: scrollProgressOpacity,
+          scaleX: scrollProgressScaleXMobile,
+        }}
+        aria-hidden="true"
+      />
+      <div className="hidden md:contents">
+        {!isInWorkSection ? (
+          <>
+            <ProceduralGrain opacity={grainOpacity} />
+            <FluidDistortion progress={scrollYProgress} />
+          </>
+        ) : null}
+      </div>
       {isFinePointer ? (
         <motion.div
           className="pointer-events-none fixed left-0 top-0 z-[15] h-2.5 w-2.5 rounded-full bg-[#9F1F2E]"
@@ -422,7 +395,7 @@ export default function Home() {
             animate={{ opacity: 1, filter: "blur(0px)" }}
             exit={{ opacity: 0, filter: "blur(30px)" }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 w-full h-screen z-50 bg-[#EAEAEA]"
+            className="fixed inset-0 z-50 h-screen w-full bg-[#EAEAEA]"
           >
             <LastPage onClose={() => setIsLastPageOpen(false)} />
           </motion.div>

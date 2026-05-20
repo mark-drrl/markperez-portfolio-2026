@@ -1,8 +1,9 @@
 "use client";
 
-import { motion, type MotionValue } from "framer-motion";
+import { mobileSectionScrollKeys } from "@/lib/mobileHomeOpacity";
+import { motion, type MotionValue, useTransform } from "framer-motion";
 import Link from "next/link";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 const systemText =
   '"PP Neue Montreal", "PPNeueMontreal", "Neue Montreal", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif';
@@ -11,9 +12,12 @@ const monoText =
 
 interface HeroProps {
   opacity: MotionValue<number>;
-  blur: MotionValue<string>;
+  blur?: MotionValue<string>;
   visibility: MotionValue<CSSProperties["visibility"]>;
   pointerEvents: MotionValue<CSSProperties["pointerEvents"]>;
+  isVideoActive?: boolean;
+  scrollYProgress?: MotionValue<number>;
+  mobileLite?: boolean;
 }
 
 export default function Hero({
@@ -21,8 +25,34 @@ export default function Hero({
   blur,
   visibility,
   pointerEvents,
+  isVideoActive = true,
+  scrollYProgress,
+  mobileLite = false,
 }: HeroProps) {
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoScale = useTransform(
+    scrollYProgress ?? opacity,
+    mobileLite && scrollYProgress
+      ? mobileSectionScrollKeys("hero", [0, 0.5, 1])
+      : [0, 1],
+    mobileLite ? [1.02, 1.06, 1.1] : [1, 1],
+  );
+
+  useEffect(() => {
+    const video = videoRef.current;
+
+    if (!video) {
+      return;
+    }
+
+    if (isVideoActive) {
+      void video.play().catch(() => {});
+      return;
+    }
+
+    video.pause();
+  }, [isVideoActive]);
 
   function scrollToProgress(progress: number) {
     const maxScroll =
@@ -34,35 +64,84 @@ export default function Hero({
     });
   }
 
+  const sectionStyle = mobileLite
+    ? {
+        opacity: 1,
+        visibility: "visible" as const,
+        pointerEvents: "auto" as const,
+      }
+    : {
+        opacity,
+        ...(blur ? { filter: blur } : {}),
+        visibility,
+        pointerEvents,
+      };
+
   return (
     <motion.section
       className="relative h-screen w-full overflow-hidden bg-[#efeeeb]"
-      style={{ opacity, filter: blur, visibility, pointerEvents }}
+      style={sectionStyle}
     >
-      <video
-        className="absolute left-[30%] top-0 h-full w-[185%] max-w-none -translate-x-1/2 object-cover md:left-1/2 md:w-[115.48%]"
-        src="/hero-loop.mp4"
-        poster="/hero-image.jpg"
-        autoPlay
-        muted
-        loop
-        playsInline
-        aria-hidden="true"
-      />
+      {isVideoActive ? (
+        <motion.video
+          ref={videoRef}
+          className="absolute left-[30%] top-0 h-full w-[185%] max-w-none -translate-x-1/2 object-cover md:left-1/2 md:w-[115.48%]"
+          src="/hero-loop.mp4"
+          poster="/hero-image.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="metadata"
+          style={mobileLite && scrollYProgress ? { scale: videoScale } : undefined}
+          aria-hidden="true"
+        />
+      ) : null}
       <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-[24%] bg-[#efeeeb]/5 backdrop-blur-[6px] [mask-image:linear-gradient(to_top,black_0%,black_45%,transparent_100%)]"
+        className={`pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-[24%] bg-[#efeeeb]/5 [mask-image:linear-gradient(to_top,black_0%,black_45%,transparent_100%)] ${
+          mobileLite ? "" : "backdrop-blur-[6px]"
+        }`}
         aria-hidden="true"
       />
-      <motion.div className="absolute inset-0 z-10">
-        <motion.div
-          className="relative h-full w-full"
-          initial={{ opacity: 0, filter: "blur(20px)", scale: 1.05 }}
-          animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
-          transition={{
-            duration: 2.5,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
+      <div className="absolute inset-0 z-10">
+        {mobileLite ? (
+          <div className="relative h-full w-full">
+            <HeroChrome
+              hoveredNav={hoveredNav}
+              setHoveredNav={setHoveredNav}
+              scrollToProgress={scrollToProgress}
+            />
+          </div>
+        ) : (
+          <motion.div
+            className="relative h-full w-full"
+            initial={{ opacity: 0, filter: "blur(20px)", scale: 1.05 }}
+            animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+            transition={{ duration: 2.5, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <HeroChrome
+              hoveredNav={hoveredNav}
+              setHoveredNav={setHoveredNav}
+              scrollToProgress={scrollToProgress}
+            />
+          </motion.div>
+        )}
+      </div>
+    </motion.section>
+  );
+}
+
+function HeroChrome({
+  hoveredNav,
+  setHoveredNav,
+  scrollToProgress,
+}: {
+  hoveredNav: string | null;
+  setHoveredNav: (value: string | null) => void;
+  scrollToProgress: (progress: number) => void;
+}) {
+  return (
+    <>
           <nav
             aria-label="Primary"
             className="pointer-events-auto absolute left-1/2 top-[3.77%] z-[90] -translate-x-1/2 whitespace-nowrap text-center text-[clamp(10px,0.794vw,12px)] leading-normal tracking-[0.2em]"
@@ -140,8 +219,6 @@ export default function Hero({
             <span className="absolute right-0 top-0 h-1 w-1 bg-current" />
             <span className="absolute left-1/2 top-2 h-1 w-1 -translate-x-1/2 bg-current" />
           </div>
-        </motion.div>
-      </motion.div>
-    </motion.section>
+    </>
   );
 }

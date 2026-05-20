@@ -1,5 +1,7 @@
 "use client";
 
+import { requestHomeScrollTop, requestHomeScrollWorks } from "@/lib/homeScroll";
+import { isHomePath, isWorkDetailPath } from "@/lib/routeMode";
 import { AnimatePresence, motion } from "framer-motion";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -28,11 +30,11 @@ function isInternalNavigation(event: MouseEvent, anchor: HTMLAnchorElement) {
 export default function PageLoader() {
   const pathname = usePathname();
   const router = useRouter();
-  const [isVisible, setIsVisible] = useState(true);
-  const [isSoftBlurVisible, setIsSoftBlurVisible] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const skipInitialLoader = isWorkDetailPath(pathname);
+  const [isVisible, setIsVisible] = useState(!skipInitialLoader);
+  const [progress, setProgress] = useState(skipInitialLoader ? 100 : 0);
   const isTransitioningRef = useRef(false);
-  const isSoftTransitioningRef = useRef(false);
+  const initialLoaderPlayedRef = useRef(skipInitialLoader);
   const frameRef = useRef(0);
 
   function playLoader(onComplete?: () => void, hideAfterComplete = true) {
@@ -68,6 +70,12 @@ export default function PageLoader() {
   }
 
   useEffect(() => {
+    if (isWorkDetailPath(pathname) || initialLoaderPlayedRef.current) {
+      return;
+    }
+
+    initialLoaderPlayedRef.current = true;
+
     const initialLoaderFrame = window.requestAnimationFrame(() => {
       playLoader();
     });
@@ -76,20 +84,9 @@ export default function PageLoader() {
       window.cancelAnimationFrame(initialLoaderFrame);
       window.cancelAnimationFrame(frameRef.current);
     };
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
-    if (isSoftTransitioningRef.current) {
-      const timeoutId = window.setTimeout(() => {
-        setIsSoftBlurVisible(false);
-        isSoftTransitioningRef.current = false;
-      }, 620);
-
-      return () => {
-        window.clearTimeout(timeoutId);
-      };
-    }
-
     if (!isTransitioningRef.current) {
       return;
     }
@@ -123,17 +120,24 @@ export default function PageLoader() {
       isTransitioningRef.current = true;
       const nextUrl = `${anchor.pathname}${anchor.search}${anchor.hash}`;
 
-      if (
+      const usesSoftTransition =
         SOFT_TRANSITION_PATHS.has(pathname) &&
-        SOFT_TRANSITION_PATHS.has(anchor.pathname)
-      ) {
+        SOFT_TRANSITION_PATHS.has(anchor.pathname);
+
+      if (usesSoftTransition) {
         isTransitioningRef.current = false;
-        isSoftTransitioningRef.current = true;
-        setIsSoftBlurVisible(true);
-        window.setTimeout(() => {
-          router.push(nextUrl);
-        }, 300);
+        router.push(nextUrl);
         return;
+      }
+
+      const toHome = isHomePath(anchor.pathname);
+
+      if (toHome) {
+        if (anchor.hash === "#works") {
+          requestHomeScrollWorks();
+        } else {
+          requestHomeScrollTop();
+        }
       }
 
       playLoader(() => {
@@ -150,18 +154,9 @@ export default function PageLoader() {
 
   return (
     <AnimatePresence>
-      {isSoftBlurVisible && (
-        <motion.div
-          className="pointer-events-none fixed inset-0 z-[998] bg-[#E5E5E3]/32 backdrop-blur-[30px]"
-          initial={{ opacity: 0, filter: "blur(0px)" }}
-          animate={{ opacity: 1, filter: "blur(8px)" }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.62, ease: [0.16, 1, 0.3, 1] }}
-          aria-hidden="true"
-        />
-      )}
       {isVisible && (
         <motion.div
+          key="page-loader-overlay"
           className="fixed inset-0 z-[999] flex items-center justify-center bg-[#E5E5E3] text-[#151515]"
           initial={{ opacity: 1 }}
           animate={{ opacity: 1 }}

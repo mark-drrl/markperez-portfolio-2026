@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import PageLoader from "@/components/PageLoader";
+import SiteLayoutClient from "@/components/SiteLayoutClient";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,7 +36,7 @@ export default function RootLayout({
       style={{ colorScheme: 'dark' }}
     >
       <body>
-        {children}
+        <SiteLayoutClient>{children}</SiteLayoutClient>
         <PageLoader />
         <Analytics />
       </body>
