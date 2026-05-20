@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  mobileSectionGridLayer,
+  mobileStackCellBottom,
+  mobileStackCellMiddle,
+  mobileStackCellTop,
+} from "@/constants/mobileSectionGrid";
 import { motion, type MotionValue, useTransform } from "framer-motion";
 import type { CSSProperties } from "react";
 
@@ -60,23 +66,9 @@ const replacementCells = [
 ] as const satisfies readonly ReplacementCellDefinition[];
 
 const mobileReplacementCells = [
-  {
-    className:
-      "left-1/2 top-[calc(22%-56%-0.5vh)] h-[56%] w-full max-w-full -translate-x-1/2",
-    start: 0.345,
-    end: 0.405,
-  },
-  {
-    className: "left-1/2 top-[22%] h-[56%] w-full max-w-full -translate-x-1/2",
-    start: 0.405,
-    end: 0.465,
-  },
-  {
-    className:
-      "left-1/2 top-[calc(22%+56%+0.5vh)] h-[56%] w-full max-w-full -translate-x-1/2",
-    start: 0.495,
-    end: 0.555,
-  },
+  { className: mobileStackCellTop, start: 0.345, end: 0.405 },
+  { className: mobileStackCellMiddle, start: 0.405, end: 0.465 },
+  { className: mobileStackCellBottom, start: 0.495, end: 0.555 },
 ] as const satisfies readonly ReplacementCellDefinition[];
 
 interface CurateProps {
@@ -91,21 +83,32 @@ interface ReplacementImageProps {
   cell: ReplacementCellDefinition;
   index: number;
   scrollYProgress: MotionValue<number>;
+  variant: "desktop" | "mobile";
 }
 
 function ReplacementImage({
   cell,
   index,
   scrollYProgress,
+  variant,
 }: ReplacementImageProps) {
   const src = existingImagePaths[index % existingImagePaths.length];
-  const opacity = useTransform(scrollYProgress, [cell.start, cell.end], [0, 0.46]);
+  const isMobile = variant === "mobile";
+  const opacity = useTransform(
+    scrollYProgress,
+    [cell.start, cell.end],
+    isMobile ? [0, 0.72] : [0, 0.46],
+  );
   const filter = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
-    ["blur(38px)", "blur(10px)"],
+    isMobile ? ["blur(18px)", "blur(0px)"] : ["blur(38px)", "blur(10px)"],
   );
-  const scale = useTransform(scrollYProgress, [cell.start, cell.end], [1.08, 1.03]);
+  const scale = useTransform(
+    scrollYProgress,
+    [cell.start, cell.end],
+    isMobile ? [1, 1] : [1.08, 1.03],
+  );
 
   return (
     <div className={`absolute overflow-hidden bg-neutral-400/70 ${cell.className}`}>
@@ -116,13 +119,15 @@ function ReplacementImage({
         <img
           src={src}
           alt=""
-          className="h-full w-full object-cover grayscale blur-[10px]"
+          className={`h-full w-full object-cover grayscale ${
+            isMobile ? "" : "blur-[10px]"
+          }`}
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
       </motion.div>
-      <div className="pointer-events-none absolute inset-0 bg-neutral-300/28" />
+      <div className="pointer-events-none absolute inset-0 bg-neutral-300/20 md:bg-neutral-300/28" />
     </div>
   );
 }
@@ -190,38 +195,43 @@ export default function Curate({
 
   return (
     <motion.section
-      className="absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden text-black"
+      className="absolute inset-0 flex h-full w-full flex-col justify-between overflow-hidden bg-[#EAEAEA] p-12 text-black pointer-events-none"
       style={{ opacity, filter: blur, pointerEvents, visibility }}
     >
-      <div className="absolute inset-0 z-0 hidden h-full w-full overflow-hidden blur-[18px] md:block">
+      <motion.div className="absolute inset-0 h-full w-full">
+      <div className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden opacity-95 blur-[18px] md:block">
         {replacementCells.map((cell, index) => (
           <ReplacementImage
             key={cell.className}
             cell={cell}
             index={index}
             scrollYProgress={scrollYProgress}
+            variant="desktop"
           />
         ))}
       </div>
-      <div className="absolute inset-0 z-0 block h-full w-full overflow-hidden blur-[18px] md:hidden">
+      <div className={mobileSectionGridLayer}>
         {mobileReplacementCells.map((cell, index) => (
           <ReplacementImage
             key={cell.className}
             cell={cell}
             index={index}
             scrollYProgress={scrollYProgress}
+            variant="mobile"
           />
         ))}
       </div>
 
-      <div className="pointer-events-none absolute inset-0 z-[2] bg-[#EAEAEA]/22 backdrop-blur-[18px]" />
+      <div className="pointer-events-none absolute inset-0 z-[2] hidden bg-[#EAEAEA]/22 backdrop-blur-[18px] md:block" />
 
       <p className="font-neue absolute left-8 top-8 z-20 text-[10px] font-semibold uppercase tracking-[0.2em] text-neutral-500">
         MARK <span className="text-[#9F1F2E]">PEREZ</span>
       </p>
 
+      </motion.div>
+
       <motion.div
-        className="pointer-events-none relative z-10 flex flex-col items-center text-center"
+        className="pointer-events-none relative z-20 flex h-full w-full flex-col items-center justify-center text-center"
         style={{ opacity: textOpacity, filter: textBlur }}
       >
         <h2
@@ -247,7 +257,6 @@ export default function Curate({
           into a quiet, high-impact design system that strips away the noise.
         </motion.p>
       </motion.div>
-
     </motion.section>
   );
 }

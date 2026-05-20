@@ -15,6 +15,7 @@ import {
   useScroll,
   useTransform,
 } from "framer-motion";
+import { useFinePointer } from "@/hooks/useFinePointer";
 import Lenis from "lenis";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
 
@@ -37,6 +38,7 @@ function LastPage({ onClose }: { onClose: () => void }) {
 }
 
 export default function Home() {
+  const isFinePointer = useFinePointer();
   const [isLastPageOpen, setIsLastPageOpen] = useState(false);
   const [isHoveringClickable, setIsHoveringClickable] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
@@ -212,7 +214,11 @@ export default function Home() {
   );
 
   useEffect(() => {
-    const lenis = new Lenis({ lerp: 0.075, smoothWheel: true });
+    const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+    const lenis = new Lenis({
+      lerp: isCoarsePointer ? 1 : 0.075,
+      smoothWheel: !isCoarsePointer,
+    });
     let animationFrameId = 0;
 
     function raf(time: number) {
@@ -229,6 +235,17 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (!isFinePointer) {
+      document
+        .querySelectorAll<HTMLElement>(
+          '[data-cursor-interactive="true"], a[href], button',
+        )
+        .forEach((element) => {
+          element.style.transform = "";
+        });
+      return;
+    }
+
     const clickableSelector =
       'a[href], button, input, textarea, select, summary, [role="button"], [data-cursor-interactive="true"]';
 
@@ -295,10 +312,7 @@ export default function Home() {
       window.removeEventListener("pointerleave", handlePointerLeave);
       resetMagneticElement();
     };
-  }, [
-    cursorX,
-    cursorY,
-  ]);
+  }, [cursorX, cursorY, isFinePointer]);
 
   return (
     <main ref={containerRef} className="relative h-[1800vh] bg-[#EAEAEA] md:h-[3600vh]">
@@ -365,7 +379,7 @@ export default function Home() {
           />
         </motion.div>
         <motion.div
-          className="pointer-events-none absolute inset-0 z-[46] bg-[#EAEAEA]/20 backdrop-blur-[36px]"
+          className="pointer-events-none absolute inset-0 z-[46] hidden bg-[#EAEAEA]/20 backdrop-blur-[36px] md:block"
           style={{ opacity: workGlassOpacity }}
           aria-hidden="true"
         />
@@ -380,25 +394,27 @@ export default function Home() {
       />
       <ProceduralGrain opacity={grainOpacity} />
       <FluidDistortion progress={scrollYProgress} />
-      <motion.div
-        className="pointer-events-none fixed left-0 top-0 z-[15] hidden h-2.5 w-2.5 rounded-full bg-[#9F1F2E] md:block"
-        animate={{
-          backgroundColor: isHoveringClickable
-            ? "rgba(159, 31, 46, 0.45)"
-            : "rgba(159, 31, 46, 1)",
-          filter: isHoveringClickable ? "blur(8px)" : "blur(0px)",
-          opacity: isHoveringClickable ? 0.58 : 1,
-          scale: isHoveringClickable ? 1.65 : 1,
-        }}
-        transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
-        style={{
-          x: cursorSpringX,
-          y: cursorSpringY,
-          translateX: "-50%",
-          translateY: "-50%",
-        }}
-        aria-hidden="true"
-      />
+      {isFinePointer ? (
+        <motion.div
+          className="pointer-events-none fixed left-0 top-0 z-[15] h-2.5 w-2.5 rounded-full bg-[#9F1F2E]"
+          animate={{
+            backgroundColor: isHoveringClickable
+              ? "rgba(159, 31, 46, 0.45)"
+              : "rgba(159, 31, 46, 1)",
+            filter: isHoveringClickable ? "blur(8px)" : "blur(0px)",
+            opacity: isHoveringClickable ? 0.58 : 1,
+            scale: isHoveringClickable ? 1.65 : 1,
+          }}
+          transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
+          style={{
+            x: cursorSpringX,
+            y: cursorSpringY,
+            translateX: "-50%",
+            translateY: "-50%",
+          }}
+          aria-hidden="true"
+        />
+      ) : null}
       <AnimatePresence>
         {isLastPageOpen && (
           <motion.div

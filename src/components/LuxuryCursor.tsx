@@ -1,9 +1,11 @@
 "use client";
 
+import { useFinePointer } from "@/hooks/useFinePointer";
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 
 export default function LuxuryCursor() {
+  const isFinePointer = useFinePointer();
   const [isHoveringClickable, setIsHoveringClickable] = useState(false);
   const activeMagneticElementRef = useRef<HTMLElement | null>(null);
   const cursorX = useMotionValue(-100);
@@ -20,6 +22,10 @@ export default function LuxuryCursor() {
   });
 
   useEffect(() => {
+    if (!isFinePointer) {
+      return;
+    }
+
     const clickableSelector =
       'a[href], button, input, textarea, select, summary, [role="button"], [data-cursor-interactive="true"]';
 
@@ -86,11 +92,15 @@ export default function LuxuryCursor() {
       window.removeEventListener("pointerleave", handlePointerLeave);
       resetMagneticElement();
     };
-  }, [cursorX, cursorY]);
+  }, [cursorX, cursorY, isFinePointer]);
+
+  if (!isFinePointer) {
+    return null;
+  }
 
   return (
     <motion.div
-      className="pointer-events-none fixed left-0 top-0 z-[70] hidden h-2.5 w-2.5 rounded-full bg-[#9F1F2E] md:block"
+      className="pointer-events-none fixed left-0 top-0 z-[70] h-2.5 w-2.5 rounded-full bg-[#9F1F2E]"
       animate={{
         backgroundColor: isHoveringClickable
           ? "rgba(159, 31, 46, 0.45)"

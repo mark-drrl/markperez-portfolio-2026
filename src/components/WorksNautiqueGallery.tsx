@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import ProjectMediaLightbox from "@/components/ProjectMediaLightbox";
+import { GalleryImage, GalleryVideo } from "@/components/GalleryMedia";
 import {
   galleryItemClassName,
-  galleryMediaClassName,
   useGalleryScroll,
 } from "@/hooks/useGalleryScroll";
 
@@ -135,7 +135,7 @@ export default function WorksNautiqueGallery({ items }: WorksNautiqueGalleryProp
     <div className="relative h-full">
       <div
         ref={scrollerRef}
-        className="h-full overflow-y-auto overscroll-contain px-1 pb-[50vh] pt-[20vh] max-md:snap-y max-md:snap-proximity max-md:scroll-smooth"
+        className="h-full overflow-y-auto overscroll-contain px-1 pb-[50vh] pt-[20vh] max-md:snap-y max-md:snap-mandatory"
       >
         <div className="flex flex-col items-center gap-5">
           {items.map((item, index) => (
@@ -172,10 +172,10 @@ export default function WorksNautiqueGallery({ items }: WorksNautiqueGalleryProp
               }}
             >
               {item.type === "video" ? (
-                <video
-                  ref={videoRef}
+                <GalleryVideo
+                  videoRef={videoRef}
                   src={item.src}
-                  className={`pointer-events-none ${galleryMediaClassName(focusedIndex, index)}`}
+                  isFocused={focusedIndex === index}
                   autoPlay
                   muted
                   loop
@@ -186,12 +186,11 @@ export default function WorksNautiqueGallery({ items }: WorksNautiqueGalleryProp
                   onTimeUpdate={handleVideoTimeUpdate}
                 />
               ) : (
-                <img
+                <GalleryImage
                   src={item.src}
                   alt={`Nautique gallery image ${index + 1}`}
-                  className={galleryMediaClassName(focusedIndex, index)}
+                  isFocused={focusedIndex === index}
                   loading={index < 2 ? "eager" : "lazy"}
-                  decoding="async"
                 />
               )}
             </div>

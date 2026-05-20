@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import ProjectMediaLightbox from "@/components/ProjectMediaLightbox";
+import { GalleryImage, GalleryVideo } from "@/components/GalleryMedia";
 import {
   galleryItemClassName,
-  galleryMediaClassName,
   galleryScrollerClassName,
   useGalleryScroll,
 } from "@/hooks/useGalleryScroll";
@@ -214,12 +214,12 @@ export default function WorksLsbGallery({
               }}
             >
               {item.type === "video" ? (
-                <video
-                  ref={(element) => {
+                <GalleryVideo
+                  videoRef={(element) => {
                     videoRefs.current[index] = element;
                   }}
                   src={item.src}
-                  className={`pointer-events-none ${galleryMediaClassName(focusedIndex, index)}`}
+                  isFocused={focusedIndex === index}
                   autoPlay
                   muted
                   loop
@@ -246,12 +246,11 @@ export default function WorksLsbGallery({
                   }}
                 />
               ) : (
-                <img
+                <GalleryImage
                   src={item.src}
                   alt={`LSB Yacht Charter gallery image ${index + 1}`}
-                  className={galleryMediaClassName(focusedIndex, index)}
+                  isFocused={focusedIndex === index}
                   loading={index < 2 ? "eager" : "lazy"}
-                  decoding="async"
                 />
               )}
             </div>

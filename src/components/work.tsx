@@ -4,9 +4,11 @@ import {
   motion,
   type MotionValue,
   useMotionValue,
+  useMotionValueEvent,
   useSpring,
   useTransform,
 } from "framer-motion";
+import { mobileStackColumn } from "@/constants/mobileSectionGrid";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -23,12 +25,18 @@ const workImages = [
   "/work/portfolio-10.jpg",
 ];
 
+function columnCycleHeight(tiles: readonly { height: number }[]) {
+  return tiles.reduce(
+    (total, tile, index) => total + tile.height + (index > 0 ? 0.5 : 0),
+    0,
+  );
+}
+
 const columns = [
   {
     left: "0%",
     width: "calc((100% - 1vh) / 3)",
     speed: 0.28,
-    cycleHeight: 183,
     initialY: 0,
     tiles: [
       { height: 60.5, image: 0 },
@@ -40,7 +48,6 @@ const columns = [
     left: "calc((100% - 1vh) / 3 + 0.5vh)",
     width: "calc((100% - 1vh) / 3)",
     speed: 0.60,
-    cycleHeight: 244,
     initialY: -48,
     tiles: [
       { height: 60.5, image: 3 },
@@ -53,7 +60,6 @@ const columns = [
     left: "calc(((100% - 1vh) / 3) * 2 + 1vh)",
     width: "calc((100% - 1vh) / 3)",
     speed: 1.10,
-    cycleHeight: 157.5,
     initialY: 0,
     tiles: [
       { height: 57.5, image: 5 },
@@ -64,6 +70,9 @@ const columns = [
 ] as const;
 
 const mobileTileHeight = 58;
+const mobileGap = 0.5;
+const mobileCycleHeight =
+  workImages.length * mobileTileHeight + (workImages.length - 1) * mobileGap;
 
 const socialButtons: readonly { label: string; href?: string }[] = [
   { label: "ABOUT", href: "/about" },
@@ -91,7 +100,7 @@ function WorkImage({ src }: { src: string }) {
       <img
         src={src}
         alt=""
-        className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-md:grayscale md:group-hover:grayscale-0 md:group-hover:contrast-110 md:group-hover:brightness-105"
+        className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] md:transition-[filter] md:duration-[1400ms] md:ease-[cubic-bezier(0.16,1,0.3,1)] max-md:grayscale md:group-hover:grayscale-0 md:group-hover:contrast-110 md:group-hover:brightness-105"
         loading="lazy"
         decoding="async"
       />
@@ -185,17 +194,17 @@ function WorkColumn({
   column,
   virtualScroll,
 }: WorkColumnProps) {
+  const cycleHeight = columnCycleHeight(column.tiles);
   const loopedTiles = [...column.tiles, ...column.tiles, ...column.tiles];
   const y = useTransform(virtualScroll, (latest) => {
-    const travel = (latest / 900) * column.speed * column.cycleHeight;
-    const rawOffset =
-      ((travel % column.cycleHeight) + column.cycleHeight) % column.cycleHeight;
-    return `${column.initialY - column.cycleHeight - rawOffset}vh`;
+    const travel = (latest / 900) * column.speed * cycleHeight;
+    const rawOffset = ((travel % cycleHeight) + cycleHeight) % cycleHeight;
+    return `${column.initialY - cycleHeight - rawOffset}vh`;
   });
 
   return (
     <motion.div
-      className="absolute top-0 h-full will-change-transform"
+      className="absolute top-0 h-full transform-gpu"
       style={{
         left: column.left,
         width: column.width,
@@ -219,21 +228,36 @@ function WorkColumn({
   );
 }
 
-function WorkMobileColumn() {
+function WorkMobileColumn({
+  virtualScroll,
+}: {
+  virtualScroll: MotionValue<number>;
+}) {
+  const loopedImages = [...workImages, ...workImages, ...workImages];
+  const y = useTransform(virtualScroll, (latest) => {
+    const travel = (latest / 900) * 0.55 * mobileCycleHeight;
+    const rawOffset =
+      ((travel % mobileCycleHeight) + mobileCycleHeight) % mobileCycleHeight;
+    return `${-mobileCycleHeight - rawOffset}vh`;
+  });
+
   return (
-    <div className="absolute inset-x-0 top-0 h-full touch-pan-y overflow-y-auto overscroll-contain max-md:snap-y max-md:snap-proximity max-md:scroll-smooth">
-      <div className="flex flex-col gap-[0.5vh] py-[12vh]">
-        {workImages.map((src) => (
+    <motion.div
+      className={`${mobileStackColumn} transform-gpu`}
+      style={{ y }}
+    >
+      <div className="flex flex-col gap-[0.5vh]">
+        {loopedImages.map((src, tileIndex) => (
           <div
-            key={src}
-            className="w-full max-md:snap-center max-md:snap-always overflow-hidden bg-neutral-300"
+            key={`${src}-${tileIndex}`}
+            className="w-full overflow-hidden bg-neutral-300"
             style={{ height: `${mobileTileHeight}vh` }}
           >
             <WorkImage src={src} />
           </div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -247,15 +271,29 @@ export default function Work({
   const sectionRef = useRef<HTMLElement>(null);
   const isWorkLockedRef = useRef(false);
   const workLockScrollYRef = useRef(0);
-  const pendingWheelDeltaRef = useRef(0);
-  const wheelFrameRef = useRef(0);
+  const lastTouchYRef = useRef(0);
+  const scrollLockFrameRef = useRef(0);
   const virtualScroll = useMotionValue(0);
-  const desktopEasedVirtualScroll = useSpring(virtualScroll, {
-    damping: 38,
-    stiffness: 92,
-    mass: 1.05,
-    restDelta: 0.008,
+  const mobileEasedVirtualScroll = useSpring(virtualScroll, {
+    damping: 52,
+    stiffness: 200,
+    mass: 0.55,
+    restDelta: 0.03,
   });
+  const desktopEasedVirtualScroll = useSpring(virtualScroll, {
+    damping: 50,
+    stiffness: 240,
+    mass: 0.45,
+    restDelta: 0.05,
+  });
+
+  useMotionValueEvent(scrollYProgress, "change", (latest) => {
+    if (latest < 0.63) {
+      isWorkLockedRef.current = false;
+      workLockScrollYRef.current = 0;
+    }
+  });
+
   useEffect(() => {
     const formatter = new Intl.DateTimeFormat("en-US", {
       hour: "2-digit",
@@ -277,12 +315,24 @@ export default function Work({
   }, []);
 
   useEffect(() => {
+    const sectionElement = sectionRef.current;
+
     function isMobileViewport() {
       return window.matchMedia("(max-width: 767px)").matches;
     }
 
+    function isInWorkSection() {
+      return scrollYProgress.get() >= 0.64;
+    }
+
+    function unlockWorkScroll() {
+      isWorkLockedRef.current = false;
+      workLockScrollYRef.current = 0;
+    }
+
     function lockWorkScroll() {
-      if (scrollYProgress.get() < 0.64) {
+      if (!isInWorkSection()) {
+        unlockWorkScroll();
         return false;
       }
 
@@ -295,43 +345,27 @@ export default function Work({
       return true;
     }
 
-    function flushWheelDelta() {
-      if (!isWorkLockedRef.current) {
-        wheelFrameRef.current = 0;
-        pendingWheelDeltaRef.current = 0;
+    function lockPageScroll() {
+      if (!isInWorkSection() || !isWorkLockedRef.current) {
         return;
       }
 
-      if (Math.abs(pendingWheelDeltaRef.current) > 0.15) {
-        const step = pendingWheelDeltaRef.current * 0.24;
-        pendingWheelDeltaRef.current -= step;
-        virtualScroll.set(virtualScroll.get() + step);
-      } else if (pendingWheelDeltaRef.current !== 0) {
-        virtualScroll.set(virtualScroll.get() + pendingWheelDeltaRef.current);
-        pendingWheelDeltaRef.current = 0;
+      if (Math.abs(window.scrollY - workLockScrollYRef.current) <= 2) {
+        return;
       }
 
-      if (Math.abs(window.scrollY - workLockScrollYRef.current) > 1) {
-        window.scrollTo(0, workLockScrollYRef.current);
-      }
-
-      if (Math.abs(pendingWheelDeltaRef.current) > 0.01) {
-        wheelFrameRef.current = window.requestAnimationFrame(flushWheelDelta);
-      } else {
-        wheelFrameRef.current = 0;
-      }
+      window.scrollTo(0, workLockScrollYRef.current);
     }
 
-    function startWheelSmoothing() {
-      if (!wheelFrameRef.current) {
-        wheelFrameRef.current = window.requestAnimationFrame(flushWheelDelta);
+    function schedulePageScrollLock() {
+      if (scrollLockFrameRef.current) {
+        return;
       }
-    }
 
-    function stopWheelSmoothing() {
-      pendingWheelDeltaRef.current = 0;
-      window.cancelAnimationFrame(wheelFrameRef.current);
-      wheelFrameRef.current = 0;
+      scrollLockFrameRef.current = window.requestAnimationFrame(() => {
+        scrollLockFrameRef.current = 0;
+        lockPageScroll();
+      });
     }
 
     function handleWheel(event: WheelEvent) {
@@ -339,9 +373,14 @@ export default function Work({
         return;
       }
 
-      lockWorkScroll();
+      if (!lockWorkScroll()) {
+        return;
+      }
 
-      if (!isWorkLockedRef.current) {
+      const currentVirtualScroll = virtualScroll.get();
+
+      if (event.deltaY < 0 && currentVirtualScroll <= 0) {
+        unlockWorkScroll();
         return;
       }
 
@@ -349,16 +388,44 @@ export default function Work({
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      pendingWheelDeltaRef.current += event.deltaY * 0.8;
-      startWheelSmoothing();
+      virtualScroll.set(Math.max(0, currentVirtualScroll + event.deltaY * 0.85));
+      schedulePageScrollLock();
+    }
+
+    function handleTouchStart(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (!touch || !isMobileViewport()) {
+        return;
+      }
+
+      lastTouchYRef.current = touch.clientY;
+      lockWorkScroll();
+    }
+
+    function handleTouchMove(event: TouchEvent) {
+      const touch = event.touches[0];
+
+      if (!touch || !isMobileViewport() || !isWorkLockedRef.current) {
+        return;
+      }
+
+      event.preventDefault();
+      const deltaY = lastTouchYRef.current - touch.clientY;
+      lastTouchYRef.current = touch.clientY;
+      virtualScroll.set(virtualScroll.get() + deltaY * 0.55);
+
+      schedulePageScrollLock();
     }
 
     function handleScroll() {
-      if (
-        isWorkLockedRef.current &&
-        Math.abs(window.scrollY - workLockScrollYRef.current) > 2
-      ) {
-        window.scrollTo(0, workLockScrollYRef.current);
+      if (!isInWorkSection()) {
+        unlockWorkScroll();
+        return;
+      }
+
+      if (isWorkLockedRef.current) {
+        schedulePageScrollLock();
       }
     }
 
@@ -367,20 +434,27 @@ export default function Work({
       capture: true,
     });
     window.addEventListener("scroll", handleScroll, { passive: true });
+    sectionElement?.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    sectionElement?.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
 
     return () => {
       window.removeEventListener("wheel", handleWheel, { capture: true });
       window.removeEventListener("scroll", handleScroll);
-      stopWheelSmoothing();
+      sectionElement?.removeEventListener("touchstart", handleTouchStart);
+      sectionElement?.removeEventListener("touchmove", handleTouchMove);
+      window.cancelAnimationFrame(scrollLockFrameRef.current);
     };
   }, [scrollYProgress, virtualScroll]);
 
   function handleBackToHome() {
     isWorkLockedRef.current = false;
     workLockScrollYRef.current = 0;
-    pendingWheelDeltaRef.current = 0;
-    window.cancelAnimationFrame(wheelFrameRef.current);
-    wheelFrameRef.current = 0;
+    window.cancelAnimationFrame(scrollLockFrameRef.current);
+    scrollLockFrameRef.current = 0;
     virtualScroll.set(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -408,7 +482,7 @@ export default function Work({
           ))}
         </div>
         <div className="block h-full w-full md:hidden">
-          <WorkMobileColumn />
+          <WorkMobileColumn virtualScroll={mobileEasedVirtualScroll} />
         </div>
       </motion.div>
 

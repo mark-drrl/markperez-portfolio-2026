@@ -10,6 +10,7 @@ export function useGalleryScroll(
   const animationFrameRef = useRef(0);
   const snapTimeoutRef = useRef(0);
   const lastTouchYRef = useRef(0);
+  const focusFrameRef = useRef(0);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -26,8 +27,8 @@ export function useGalleryScroll(
     }
 
     function findNearestItem() {
-      const viewportCenter =
-        scrollerElement.scrollTop + scrollerElement.clientHeight / 2;
+      const scrollerRect = scrollerElement.getBoundingClientRect();
+      const viewportCenter = scrollerRect.top + scrollerRect.height / 2;
       const galleryItems = Array.from(
         scrollerElement.querySelectorAll<HTMLElement>("[data-gallery-item]"),
       );
@@ -37,8 +38,10 @@ export function useGalleryScroll(
           return item;
         }
 
-        const nearestCenter = nearest.offsetTop + nearest.offsetHeight / 2;
-        const itemCenter = item.offsetTop + item.offsetHeight / 2;
+        const itemRect = item.getBoundingClientRect();
+        const nearestRect = nearest.getBoundingClientRect();
+        const itemCenter = itemRect.top + itemRect.height / 2;
+        const nearestCenter = nearestRect.top + nearestRect.height / 2;
 
         return Math.abs(itemCenter - viewportCenter) <
           Math.abs(nearestCenter - viewportCenter)
@@ -50,14 +53,16 @@ export function useGalleryScroll(
     function getSnapScrollTop(item: HTMLElement) {
       const maxScroll =
         scrollerElement.scrollHeight - scrollerElement.clientHeight;
+      const scrollerRect = scrollerElement.getBoundingClientRect();
+      const itemRect = item.getBoundingClientRect();
+      const itemCenterInScroller =
+        itemRect.top - scrollerRect.top + scrollerElement.scrollTop + itemRect.height / 2;
 
       return Math.max(
         0,
         Math.min(
           maxScroll,
-          item.offsetTop +
-            item.offsetHeight / 2 -
-            scrollerElement.clientHeight / 2,
+          itemCenterInScroller - scrollerElement.clientHeight / 2,
         ),
       );
     }
@@ -85,25 +90,37 @@ export function useGalleryScroll(
       setFocusedIndex(nearestIndex);
 
       if (isMobile()) {
-        scrollerElement.scrollTo({
-          top: snapTop,
-          behavior: smooth ? "smooth" : "auto",
-        });
         return;
       }
 
       targetScrollRef.current = snapTop;
+
+      if (smooth) {
+        scrollerElement.scrollTo({
+          top: snapTop,
+          behavior: "smooth",
+        });
+      }
+    }
+
+    function scheduleFocusUpdate() {
+      if (focusFrameRef.current) {
+        return;
+      }
+
+      focusFrameRef.current = window.requestAnimationFrame(() => {
+        focusFrameRef.current = 0;
+        updateFocusedFromViewport();
+      });
     }
 
     function handleMobileScroll() {
-      updateFocusedFromViewport();
-      window.clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = window.setTimeout(() => snapToNearestItem(true), 140);
+      scheduleFocusUpdate();
     }
 
     if (isMobile()) {
-      const initialSnapFrame = window.requestAnimationFrame(() => {
-        snapToNearestItem(false);
+      const initialFocusFrame = window.requestAnimationFrame(() => {
+        updateFocusedFromViewport();
       });
 
       scrollerElement.addEventListener("scroll", handleMobileScroll, {
@@ -111,8 +128,8 @@ export function useGalleryScroll(
       });
 
       return () => {
-        window.cancelAnimationFrame(initialSnapFrame);
-        window.clearTimeout(snapTimeoutRef.current);
+        window.cancelAnimationFrame(initialFocusFrame);
+        window.cancelAnimationFrame(focusFrameRef.current);
         scrollerElement.removeEventListener("scroll", handleMobileScroll);
       };
     }
@@ -143,6 +160,7 @@ export function useGalleryScroll(
         Math.min(maxScroll, targetScrollRef.current + event.deltaY * 0.78),
       );
 
+      scheduleFocusUpdate();
       window.clearTimeout(snapTimeoutRef.current);
       snapTimeoutRef.current = window.setTimeout(() => snapToNearestItem(false), 160);
     }
@@ -174,6 +192,7 @@ export function useGalleryScroll(
         Math.min(maxScroll, targetScrollRef.current + deltaY * 1.35),
       );
 
+      scheduleFocusUpdate();
       window.clearTimeout(snapTimeoutRef.current);
       snapTimeoutRef.current = window.setTimeout(() => snapToNearestItem(false), 180);
     }
@@ -197,17 +216,8 @@ export function useGalleryScroll(
   }, [scrollerRef, setFocusedIndex, resetKey]);
 }
 
-export function galleryMediaClassName(
-  focusedIndex: number,
-  index: number,
-) {
-  return `h-full w-full object-contain contrast-110 transition-[filter] duration-[2200ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-    focusedIndex === index ? "grayscale-0" : "grayscale"
-  }`;
-}
-
 export const galleryScrollerClassName =
-  "h-full overflow-y-auto overscroll-contain px-1 py-[20vh] max-md:snap-y max-md:snap-proximity max-md:scroll-smooth";
+  "h-full overflow-y-auto overscroll-contain px-1 py-[20vh] max-md:snap-y max-md:snap-mandatory";
 
 export const galleryItemClassName =
-  "relative max-md:!w-full max-md:snap-center max-md:snap-always cursor-pointer overflow-hidden";
+  "relative max-md:!w-full max-md:snap-center cursor-pointer overflow-hidden";
