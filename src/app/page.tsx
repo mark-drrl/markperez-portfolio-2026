@@ -9,6 +9,7 @@ import { useFinePointer } from "@/hooks/useFinePointer";
 import {
   HOME_SCROLL_SYNC_EVENT,
   HOME_WORK_SCROLL_PROGRESS,
+  dispatchHomeScrollSync,
   getHomeScrollProgress,
   getWorkLandingScrollProgress,
   prepareHomeScrollToWorks,
@@ -126,6 +127,7 @@ export default function Home() {
         main,
       );
       syncHomeScrollFromProgress(progress);
+      dispatchHomeScrollSync();
       return;
     }
 
@@ -146,6 +148,7 @@ export default function Home() {
         syncHomeScrollFromProgress(
           scrollHomeToProgress(getWorkLandingScrollProgress(), main),
         );
+        dispatchHomeScrollSync();
         return;
       }
 
@@ -363,7 +366,7 @@ export default function Home() {
         className="pointer-events-none absolute top-[78%] h-px w-px md:top-[64%]"
         aria-hidden="true"
       />
-      <div className="sticky top-0 h-screen w-full overflow-hidden">
+      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden md:h-screen">
         <HomeMobileStack scrollYProgress={scrollYProgress} />
         <HomeDesktopStack scrollYProgress={scrollYProgress} />
       </div>
