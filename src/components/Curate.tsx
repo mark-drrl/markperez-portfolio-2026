@@ -4,7 +4,7 @@ import MarkPerezBrand from "@/components/MarkPerezBrand";
 import SectionInlineCopy from "@/components/SectionInlineCopy";
 import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
-import { mobileCurateImagePaths } from "@/constants/mobileCurateImages";
+import { workGalleryImages } from "@/constants/workGalleryImages";
 import {
   mobileBackgroundBlurFilter,
   mobileCurateBlur,
@@ -128,7 +128,7 @@ function ReplacementImage({
 }: ReplacementImageProps) {
   const isMobile = variant === "mobile";
   const src = isMobile
-    ? mobileCurateImagePaths[index % mobileCurateImagePaths.length]
+    ? workGalleryImages[index % workGalleryImages.length]
     : existingImagePaths[index % existingImagePaths.length];
   const opacity = useTransform(
     scrollYProgress,

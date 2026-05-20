@@ -1,3 +1,7 @@
+import {
+  getMobileFocusedImageIndex,
+  getMobileWorkScrollStride,
+} from "@/lib/mobileWorkScroll";
 import { luminanceToNavTone } from "@/lib/sectionNavTone";
 
 /** Approximate perceived luminance after grayscale + contrast (0 = dark, 1 = light). */
@@ -14,13 +18,6 @@ const WORK_IMAGE_LUMINANCE: Record<number, number> = {
   9: 0.52,
 };
 
-function getMobileWorkScrollStride() {
-  if (typeof window === "undefined") {
-    return 560;
-  }
-
-  return window.innerHeight * 0.565;
-}
 const HEADER_SAMPLE_VH = 14;
 
 type WorkColumn = {
@@ -80,10 +77,7 @@ export function workHeaderNavTone(
   },
 ) {
   const imageIndex = options.isMobile
-    ? ((Math.round(virtualOffset / getMobileWorkScrollStride()) %
-        options.imageCount) +
-        options.imageCount) %
-      options.imageCount
+    ? getMobileFocusedImageIndex(virtualOffset)
     : options.leftColumn
       ? imageIndexAtColumnSample(
           virtualOffset,

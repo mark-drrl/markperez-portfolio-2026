@@ -1,3 +1,4 @@
+import { getDefaultMobileVirtualOffset } from "@/lib/mobileWorkScroll";
 import type { MotionValue } from "framer-motion";
 import type Lenis from "lenis";
 
@@ -102,7 +103,7 @@ export function unregisterWorkScrollMotionValues() {
 }
 
 export function resetWorkVirtualScroll() {
-  syncVirtualScrollValues(0);
+  syncVirtualScrollValues(getDefaultMobileVirtualOffset());
 }
 
 /** Hero reset — clears work lock, virtual gallery offset, and Lenis/window scroll. */

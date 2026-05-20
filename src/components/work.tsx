@@ -1,5 +1,6 @@
 "use client";
 
+import { workGalleryImages } from "@/constants/workGalleryImages";
 import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import {
   motion,
@@ -12,6 +13,13 @@ import { GalleryImage } from "@/components/GalleryMedia";
 import MarkPerezBrand from "@/components/MarkPerezBrand";
 import WorkSocialLinks from "@/components/WorkSocialLinks";
 import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
+import {
+  getMobileFocusedImageIndex,
+  getMobileWorkAnchorOffset,
+  getMobileWorkScrollStride,
+  isMobileWorkViewport,
+  rebaseMobileVirtualOffset,
+} from "@/lib/mobileWorkScroll";
 import { workHeaderNavTone } from "@/lib/workSocialTone";
 import {
   dispatchHomeScrollSync,
@@ -34,18 +42,7 @@ import {
   useState,
 } from "react";
 
-const workImages = [
-  "/work/portfolio-1.jpg",
-  "/work/portfolio-2.png",
-  "/work/portfolio-3.jpg",
-  "/work/portfolio-4.jpg",
-  "/work/portfolio-5.jpg",
-  "/work/portfolio-6.jpg",
-  "/work/portfolio-7.jpg",
-  "/work/portfolio-8.jpg",
-  "/work/portfolio-9.jpg",
-  "/work/portfolio-10.jpg",
-];
+const workImages = workGalleryImages;
 
 function columnCycleHeight(tiles: readonly { height: number }[]) {
   return tiles.reduce(
@@ -91,23 +88,16 @@ const columns = [
   },
 ] as const;
 
-const MOBILE_SNAP_DURATION_MS = 480;
-const MOBILE_WORK_CELL_VH = 56;
-const MOBILE_WORK_CELL_GAP_VH = 0.5;
+const MOBILE_SNAP_DURATION_MS = 380;
+const MOBILE_SNAP_DURATION_FAST_MS = 260;
+const MOBILE_TOUCH_GAIN = 1.2;
+const MOBILE_VELOCITY_SNAP_THRESHOLD = 0.22;
 
 const mobileWorkStripImages = [
   ...workImages,
   ...workImages,
   ...workImages,
 ] as const;
-
-function getMobileWorkScrollStride() {
-  if (typeof window === "undefined") {
-    return 560;
-  }
-
-  return window.innerHeight * ((MOBILE_WORK_CELL_VH + MOBILE_WORK_CELL_GAP_VH) / 100);
-}
 
 function workScrollEnterThreshold() {
   if (typeof window === "undefined") {
@@ -264,10 +254,7 @@ function MobileWorkGalleryImage({
   src: string;
 }) {
   const filter = useTransform(virtualScroll, (offset) => {
-    const stride = getMobileWorkScrollStride();
-    const focused =
-      ((Math.round(offset / stride) % workImages.length) + workImages.length) %
-      workImages.length;
+    const focused = getMobileFocusedImageIndex(offset);
 
     return imageIndex === focused ? mobileFocusedFilter : mobileIdleFilter;
   });
@@ -328,6 +315,8 @@ export default function Work({
   const workLockScrollYRef = useRef(0);
   const lastTouchYRef = useRef(0);
   const snapFrameRef = useRef(0);
+  const touchVelocityRef = useRef(0);
+  const lastTouchMoveRef = useRef({ y: 0, time: 0 });
   const virtualScroll = useMotionValue(0);
   const socialNavTone = useTransform(virtualScroll, (offset) =>
     workHeaderNavTone(offset, {
@@ -341,6 +330,16 @@ export default function Work({
 
   useEffect(() => {
     registerWorkScrollMotionValues(scrollYProgress, virtualScroll);
+
+    if (isMobileWorkViewport()) {
+      const anchor = getMobileWorkAnchorOffset();
+
+      if (virtualScroll.get() < getMobileWorkScrollStride() * 0.25) {
+        workScrollBridge.targetVirtualScroll = anchor;
+        workScrollBridge.displayVirtualScroll = anchor;
+        virtualScroll.set(anchor);
+      }
+    }
 
     return () => {
       unregisterWorkScrollMotionValues();
@@ -387,18 +386,30 @@ export default function Work({
     }
 
     function setVirtualScrollValue(value: number) {
-      const clamped = Math.max(0, value);
-      workScrollBridge.targetVirtualScroll = clamped;
-      workScrollBridge.displayVirtualScroll = clamped;
-      virtualScroll.set(clamped);
+      const rebased = rebaseMobileVirtualOffset(value);
+      workScrollBridge.targetVirtualScroll = rebased;
+      workScrollBridge.displayVirtualScroll = rebased;
+      virtualScroll.set(rebased);
     }
 
     function snapMobileVirtualScroll() {
       cancelSnapAnimation();
 
       const stride = getMobileWorkScrollStride();
+      const anchor = getMobileWorkAnchorOffset();
       const start = virtualScroll.get();
-      const target = Math.round(start / stride) * stride;
+      const relative = start - anchor;
+      const fractional = relative / stride;
+      const velocity = touchVelocityRef.current;
+      let snapIndex = Math.round(fractional);
+
+      if (Math.abs(velocity) > MOBILE_VELOCITY_SNAP_THRESHOLD) {
+        snapIndex += velocity > 0 ? 1 : -1;
+      } else if (Math.abs(fractional - snapIndex) > 0.18) {
+        snapIndex = fractional > snapIndex ? Math.ceil(fractional) : Math.floor(fractional);
+      }
+
+      const target = rebaseMobileVirtualOffset(anchor + snapIndex * stride);
 
       if (Math.abs(target - start) < 0.5) {
         setVirtualScrollValue(target);
@@ -406,10 +417,14 @@ export default function Work({
       }
 
       const startTime = performance.now();
+      const duration =
+        Math.abs(velocity) > MOBILE_VELOCITY_SNAP_THRESHOLD
+          ? MOBILE_SNAP_DURATION_FAST_MS
+          : MOBILE_SNAP_DURATION_MS;
 
       function frame(now: number) {
         const elapsed = now - startTime;
-        const t = Math.min(1, elapsed / MOBILE_SNAP_DURATION_MS);
+        const t = Math.min(1, elapsed / duration);
         const eased = 1 - (1 - t) ** 3;
         const value = start + (target - start) * eased;
 
@@ -417,6 +432,8 @@ export default function Work({
 
         if (t < 1) {
           snapFrameRef.current = window.requestAnimationFrame(frame);
+        } else {
+          setVirtualScrollValue(rebaseMobileVirtualOffset(target));
         }
       }
 
@@ -431,7 +448,9 @@ export default function Work({
       }
 
       cancelSnapAnimation();
+      touchVelocityRef.current = 0;
       lastTouchYRef.current = touch.clientY;
+      lastTouchMoveRef.current = { y: touch.clientY, time: performance.now() };
 
       if (isInWorkSection()) {
         isWorkLockedRef.current = true;
@@ -442,7 +461,7 @@ export default function Work({
     function handleTouchMove(event: TouchEvent) {
       const touch = event.touches[0];
 
-      if (!touch || !isMobileViewport() || !isWorkLockedRef.current) {
+      if (!touch || !isMobileViewport()) {
         return;
       }
 
@@ -452,18 +471,39 @@ export default function Work({
         return;
       }
 
+      if (!isWorkLockedRef.current) {
+        isWorkLockedRef.current = true;
+        workLockScrollYRef.current = window.scrollY;
+        lastTouchYRef.current = touch.clientY;
+        lastTouchMoveRef.current = { y: touch.clientY, time: performance.now() };
+        return;
+      }
+
       event.preventDefault();
       const deltaY = lastTouchYRef.current - touch.clientY;
+      const now = performance.now();
+      const elapsed = Math.max(1, now - lastTouchMoveRef.current.time);
+      const instantVelocity = deltaY / elapsed;
+
+      touchVelocityRef.current =
+        touchVelocityRef.current * 0.35 + instantVelocity * 0.65;
+      lastTouchMoveRef.current = { y: touch.clientY, time: now };
       lastTouchYRef.current = touch.clientY;
-      setVirtualScrollValue(virtualScroll.get() + deltaY * 0.55);
+      setVirtualScrollValue(virtualScroll.get() + deltaY * MOBILE_TOUCH_GAIN);
     }
 
     function handleTouchEnd() {
-      if (!isMobileViewport() || !isWorkLockedRef.current || !isInWorkSection()) {
+      if (!isMobileViewport() || !isInWorkSection()) {
+        isWorkLockedRef.current = false;
+        return;
+      }
+
+      if (!isWorkLockedRef.current) {
         return;
       }
 
       snapMobileVirtualScroll();
+      touchVelocityRef.current = 0;
     }
 
     sectionElement?.addEventListener("touchstart", handleTouchStart, {
