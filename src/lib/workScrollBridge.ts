@@ -1,8 +1,9 @@
 import type { MotionValue } from "framer-motion";
 import type Lenis from "lenis";
 
-const WORK_ENTER_PROGRESS = 0.64;
-const WORK_EXIT_PROGRESS = 0.63;
+export const WORK_ENTER_PROGRESS = 0.64;
+/** Hysteresis: stay in work gallery until scroll drops clearly below enter threshold. */
+export const WORK_EXIT_PROGRESS = 0.61;
 const WHEEL_TO_VIRTUAL = 0.9;
 const SMOOTH_SCROLL_LAMBDA = 11;
 
@@ -202,11 +203,17 @@ export function handleWorkLenisVirtualScroll(data: VirtualScrollData): boolean {
   }
 
   if (progress < WORK_EXIT_PROGRESS) {
-    unlockWorkScroll();
+    if (workScrollBridge.isLocked) {
+      unlockWorkScroll();
+    }
+
     return true;
   }
 
-  if (progress < WORK_ENTER_PROGRESS || !lenis || !virtualScroll) {
+  const inWorkGallery =
+    workScrollBridge.isLocked || progress >= WORK_ENTER_PROGRESS;
+
+  if (!inWorkGallery || !lenis || !virtualScroll) {
     return true;
   }
 

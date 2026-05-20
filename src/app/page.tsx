@@ -9,6 +9,7 @@ import { useFinePointer } from "@/hooks/useFinePointer";
 import {
   HOME_SCROLL_SYNC_EVENT,
   HOME_WORK_SCROLL_PROGRESS,
+  getHomeScrollProgress,
   prepareHomeScrollToWorks,
   scrollHomeToProgress,
   scrollHomeToTop,
@@ -88,7 +89,15 @@ export default function Home() {
   const scrollYProgress = useHomeScrollProgress(containerRef);
 
   const syncHomeScrollFromProgress = useCallback((progress: number) => {
-    const inWork = progress >= workThresholdForViewport();
+    const enterThreshold = workThresholdForViewport();
+    const exitThreshold = enterThreshold - 0.03;
+    let inWork = inWorkRef.current;
+
+    if (!inWork && progress >= enterThreshold) {
+      inWork = true;
+    } else if (inWork && progress < exitThreshold) {
+      inWork = false;
+    }
 
     if (inWork !== inWorkRef.current) {
       inWorkRef.current = inWork;
@@ -225,6 +234,13 @@ export default function Home() {
       lenis.raf(time);
       syncWorkScrollEngagement();
       tickWorkVirtualScrollSmoothing(time);
+
+      const main = containerRef.current;
+
+      if (main) {
+        scrollYProgress.set(getHomeScrollProgress(main));
+      }
+
       animationFrameId = requestAnimationFrame(raf);
     }
 
@@ -348,10 +364,7 @@ export default function Home() {
       />
       <div className="sticky top-0 h-screen w-full overflow-hidden">
         <HomeMobileStack scrollYProgress={scrollYProgress} />
-        <HomeDesktopStack
-          scrollYProgress={scrollYProgress}
-          showWhenNotInWork={!isInWorkSection}
-        />
+        <HomeDesktopStack scrollYProgress={scrollYProgress} />
       </div>
       <motion.div
         className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] h-1.5 origin-left bg-[#9F1F2E] max-md:hidden"

@@ -26,6 +26,7 @@ import {
   resetHomeScrollPosition,
   unlockWorkScroll,
   unregisterWorkScrollMotionValues,
+  WORK_ENTER_PROGRESS,
   workScrollBridge,
 } from "@/lib/workScrollBridge";
 import Link from "next/link";
@@ -284,7 +285,18 @@ export default function Work({
   pointerEvents,
   scrollYProgress,
 }: WorkProps) {
-  const [dubaiTime, setDubaiTime] = useState("");
+  const [dubaiTime, setDubaiTime] = useState(() => {
+    if (typeof window === "undefined") {
+      return "";
+    }
+
+    return new Intl.DateTimeFormat("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Dubai",
+      timeZoneName: "short",
+    }).format(new Date());
+  });
   const sectionRef = useRef<HTMLElement>(null);
   const isWorkLockedRef = useRef(false);
   const workLockScrollYRef = useRef(0);
@@ -336,7 +348,10 @@ export default function Work({
     }
 
     function isInWorkSection() {
-      return scrollYProgress.get() >= 0.64;
+      return (
+        workScrollBridge.isLocked ||
+        scrollYProgress.get() >= WORK_ENTER_PROGRESS
+      );
     }
 
     function handleTouchStart(event: TouchEvent) {
@@ -382,7 +397,6 @@ export default function Work({
     sectionElement?.addEventListener("touchmove", handleTouchMove, {
       passive: false,
     });
-
     return () => {
       sectionElement?.removeEventListener("touchstart", handleTouchStart);
       sectionElement?.removeEventListener("touchmove", handleTouchMove);

@@ -16,13 +16,11 @@ import type { CSSProperties } from "react";
 
 interface HomeDesktopStackProps {
   scrollYProgress: MotionValue<number>;
-  showWhenNotInWork: boolean;
 }
 
 /** Desktop-only sticky stack. Hidden below `md:` — unchanged scroll choreography. */
 export default function HomeDesktopStack({
   scrollYProgress,
-  showWhenNotInWork,
 }: HomeDesktopStackProps) {
   const heroOpacity = useTransform(scrollYProgress, desktopHeroOpacity);
   const heroBlur = useTransform(
@@ -137,21 +135,6 @@ export default function HomeDesktopStack({
   const workPointerEvents = useTransform(workOpacity, (value) =>
     value > 0.9 ? "auto" : "none",
   );
-
-  if (!showWhenNotInWork) {
-    return (
-      <div className="hidden md:contents">
-        <motion.div className="pointer-events-none absolute inset-0 z-[45] h-screen w-full">
-          <Work
-            opacity={workOpacity}
-            blur={workBlur}
-            pointerEvents={workPointerEvents}
-            scrollYProgress={scrollYProgress}
-          />
-        </motion.div>
-      </div>
-    );
-  }
 
   return (
     <div className="hidden md:contents">

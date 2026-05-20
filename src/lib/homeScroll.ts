@@ -1,4 +1,7 @@
-import { resetHomeScrollPosition } from "@/lib/workScrollBridge";
+import {
+  resetHomeScrollPosition,
+  workScrollBridge,
+} from "@/lib/workScrollBridge";
 
 export const HOME_SCROLL_TOP_KEY = "portfolio:home-scroll-top";
 export const HOME_SCROLL_WORKS_KEY = "portfolio:home-scroll-works";
@@ -41,6 +44,20 @@ export function consumeHomeScrollTopRequest() {
   return shouldScrollTop;
 }
 
+function getHomeScrollY() {
+  const lenis = workScrollBridge.lenis;
+
+  if (
+    typeof window !== "undefined" &&
+    lenis &&
+    window.matchMedia("(min-width: 768px)").matches
+  ) {
+    return lenis.scroll;
+  }
+
+  return window.scrollY;
+}
+
 export function getHomeScrollProgress(container?: HTMLElement | null) {
   const scrollRoot = container ?? document.querySelector("main");
 
@@ -54,7 +71,13 @@ export function getHomeScrollProgress(container?: HTMLElement | null) {
     return 0;
   }
 
-  return Math.min(1, Math.max(0, window.scrollY / maxScroll));
+  let progress = Math.min(1, Math.max(0, getHomeScrollY() / maxScroll));
+
+  if (workScrollBridge.isLocked) {
+    progress = Math.max(progress, HOME_WORK_SCROLL_PROGRESS);
+  }
+
+  return progress;
 }
 
 export function scrollHomeToProgress(
@@ -69,8 +92,17 @@ export function scrollHomeToProgress(
 
   const maxScroll = scrollRoot.scrollHeight - window.innerHeight;
   const top = maxScroll * Math.min(1, Math.max(0, progress));
+  const lenis = workScrollBridge.lenis;
 
-  window.scrollTo({ top, left: 0, behavior: "auto" });
+  if (
+    lenis &&
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 768px)").matches
+  ) {
+    lenis.scrollTo(top, { immediate: true, force: true });
+  } else {
+    window.scrollTo({ top, left: 0, behavior: "auto" });
+  }
 
   return getHomeScrollProgress(scrollRoot);
 }
