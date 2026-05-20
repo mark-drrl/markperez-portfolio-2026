@@ -78,9 +78,7 @@ export function engageWorkScroll() {
   workScrollBridge.lockScrollY = getWorkAnchorScrollY();
   lenis.scrollTo(workScrollBridge.lockScrollY, { immediate: true, force: true });
 
-  const currentVirtual = workScrollBridge.virtualScroll?.get() ?? 0;
-  workScrollBridge.targetVirtualScroll = currentVirtual;
-  workScrollBridge.displayVirtualScroll = currentVirtual;
+  syncVirtualScrollValues(0);
 }
 
 export function unlockWorkScroll() {

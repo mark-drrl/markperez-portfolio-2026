@@ -4,7 +4,10 @@ import MarkPerezBrand from "@/components/MarkPerezBrand";
 import SectionInlineCopy from "@/components/SectionInlineCopy";
 import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
-import { workGalleryImages } from "@/constants/workGalleryImages";
+import {
+  desktopCurateWorkHandoffImageIndices,
+  workGalleryImages,
+} from "@/constants/workGalleryImages";
 import {
   mobileBackgroundBlurFilter,
   mobileCurateBlur,
@@ -25,16 +28,6 @@ import type { CSSProperties } from "react";
 
 const title = "Curating the brand";
 const sansStartIndex = title.indexOf("the brand");
-const existingImagePaths = [
-  "/work/portfolio-1.jpg",
-  "/work/portfolio-2.png",
-  "/work/portfolio-3.jpg",
-  "/work/portfolio-4.jpg",
-  "/work/portfolio-5.jpg",
-  "/work/portfolio-6.jpg",
-  "/work/portfolio-7.jpg",
-];
-
 interface ReplacementCellDefinition {
   className: string;
   start: number;
@@ -127,9 +120,10 @@ function ReplacementImage({
   mobileLite = false,
 }: ReplacementImageProps) {
   const isMobile = variant === "mobile";
-  const src = isMobile
-    ? workGalleryImages[index % workGalleryImages.length]
-    : existingImagePaths[index % existingImagePaths.length];
+  const imageIndex = isMobile
+    ? index % workGalleryImages.length
+    : (desktopCurateWorkHandoffImageIndices[index] ?? index);
+  const src = workGalleryImages[imageIndex % workGalleryImages.length];
   const opacity = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
