@@ -64,9 +64,27 @@ const gridCells = [
 ];
 
 const mobileGridCells = [
-  { className: "left-0 top-[-24%] h-[56%] w-full", blur: 28, start: 0.174, end: 0.265, origin: "48% 26%" },
-  { className: "left-0 top-[calc(32%+0.5vh)] h-[56%] w-full", blur: 34, start: 0.162, end: 0.25, origin: "52% 48%" },
-  { className: "left-0 top-[calc(88%+1vh)] h-[56%] w-full", blur: 36, start: 0.158, end: 0.235, origin: "48% 70%" },
+  {
+    className: "left-1/2 top-[calc(22%-56%-0.5vh)] h-[56%] w-full max-w-full -translate-x-1/2",
+    blur: 28,
+    start: 0.174,
+    end: 0.265,
+    origin: "50% 50%",
+  },
+  {
+    className: "left-1/2 top-[22%] h-[56%] w-full max-w-full -translate-x-1/2",
+    blur: 34,
+    start: 0.162,
+    end: 0.25,
+    origin: "50% 50%",
+  },
+  {
+    className: "left-1/2 top-[calc(22%+56%+0.5vh)] h-[56%] w-full max-w-full -translate-x-1/2",
+    blur: 36,
+    start: 0.158,
+    end: 0.235,
+    origin: "50% 50%",
+  },
 ] as const;
 
 interface CreateProps {

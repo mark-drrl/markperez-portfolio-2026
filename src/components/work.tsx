@@ -64,8 +64,6 @@ const columns = [
 ] as const;
 
 const mobileTileHeight = 58;
-const mobileGap = 0.5;
-const mobileCycleHeight = workImages.length * (mobileTileHeight + mobileGap);
 
 const socialButtons: readonly { label: string; href?: string }[] = [
   { label: "ABOUT", href: "/about" },
@@ -93,7 +91,7 @@ function WorkImage({ src }: { src: string }) {
       <img
         src={src}
         alt=""
-        className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
+        className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] max-md:grayscale md:group-hover:grayscale-0 md:group-hover:contrast-110 md:group-hover:brightness-105"
         loading="lazy"
         decoding="async"
       />
@@ -189,8 +187,9 @@ function WorkColumn({
 }: WorkColumnProps) {
   const loopedTiles = [...column.tiles, ...column.tiles, ...column.tiles];
   const y = useTransform(virtualScroll, (latest) => {
-    const rawOffset = ((latest / 900) * column.speed * column.cycleHeight) %
-      column.cycleHeight;
+    const travel = (latest / 900) * column.speed * column.cycleHeight;
+    const rawOffset =
+      ((travel % column.cycleHeight) + column.cycleHeight) % column.cycleHeight;
     return `${column.initialY - column.cycleHeight - rawOffset}vh`;
   });
 
@@ -220,35 +219,21 @@ function WorkColumn({
   );
 }
 
-function WorkMobileColumn({
-  virtualScroll,
-}: {
-  virtualScroll: MotionValue<number>;
-}) {
-  const loopedImages = [...workImages, ...workImages, ...workImages];
-  const y = useTransform(virtualScroll, (latest) => {
-    const rawOffset = ((latest / 900) * 0.72 * mobileCycleHeight) %
-      mobileCycleHeight;
-    return `${-mobileCycleHeight - rawOffset}vh`;
-  });
-
+function WorkMobileColumn() {
   return (
-    <motion.div
-      className="absolute inset-x-0 top-0 h-full will-change-transform"
-      style={{ y }}
-    >
-      <div className="flex flex-col gap-[0.5vh]">
-        {loopedImages.map((src, tileIndex) => (
+    <div className="absolute inset-x-0 top-0 h-full touch-pan-y overflow-y-auto overscroll-contain max-md:snap-y max-md:snap-proximity max-md:scroll-smooth">
+      <div className="flex flex-col gap-[0.5vh] py-[12vh]">
+        {workImages.map((src) => (
           <div
-            key={`${src}-${tileIndex}`}
-            className="w-full overflow-hidden bg-neutral-300"
+            key={src}
+            className="w-full max-md:snap-center max-md:snap-always overflow-hidden bg-neutral-300"
             style={{ height: `${mobileTileHeight}vh` }}
           >
             <WorkImage src={src} />
           </div>
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -262,23 +247,15 @@ export default function Work({
   const sectionRef = useRef<HTMLElement>(null);
   const isWorkLockedRef = useRef(false);
   const workLockScrollYRef = useRef(0);
-  const lastTouchYRef = useRef(0);
-  const holdDirectionRef = useRef(0);
-  const holdAnimationFrameRef = useRef(0);
+  const pendingWheelDeltaRef = useRef(0);
+  const wheelFrameRef = useRef(0);
   const virtualScroll = useMotionValue(0);
-  const easedVirtualScroll = useSpring(virtualScroll, {
-    damping: 32,
-    stiffness: 140,
-    mass: 0.7,
-    restDelta: 0.001,
+  const desktopEasedVirtualScroll = useSpring(virtualScroll, {
+    damping: 38,
+    stiffness: 92,
+    mass: 1.05,
+    restDelta: 0.008,
   });
-  const mobileEasedVirtualScroll = useSpring(virtualScroll, {
-    damping: 42,
-    stiffness: 86,
-    mass: 0.95,
-    restDelta: 0.001,
-  });
-
   useEffect(() => {
     const formatter = new Intl.DateTimeFormat("en-US", {
       hour: "2-digit",
@@ -300,16 +277,8 @@ export default function Work({
   }, []);
 
   useEffect(() => {
-    const sectionElement = sectionRef.current;
-
     function isMobileViewport() {
       return window.matchMedia("(max-width: 767px)").matches;
-    }
-
-    function isInteractiveTarget(target: EventTarget | null) {
-      return target instanceof Element
-        ? Boolean(target.closest("a[href], button, [role='button']"))
-        : false;
     }
 
     function lockWorkScroll() {
@@ -326,7 +295,50 @@ export default function Work({
       return true;
     }
 
+    function flushWheelDelta() {
+      if (!isWorkLockedRef.current) {
+        wheelFrameRef.current = 0;
+        pendingWheelDeltaRef.current = 0;
+        return;
+      }
+
+      if (Math.abs(pendingWheelDeltaRef.current) > 0.15) {
+        const step = pendingWheelDeltaRef.current * 0.24;
+        pendingWheelDeltaRef.current -= step;
+        virtualScroll.set(virtualScroll.get() + step);
+      } else if (pendingWheelDeltaRef.current !== 0) {
+        virtualScroll.set(virtualScroll.get() + pendingWheelDeltaRef.current);
+        pendingWheelDeltaRef.current = 0;
+      }
+
+      if (Math.abs(window.scrollY - workLockScrollYRef.current) > 1) {
+        window.scrollTo(0, workLockScrollYRef.current);
+      }
+
+      if (Math.abs(pendingWheelDeltaRef.current) > 0.01) {
+        wheelFrameRef.current = window.requestAnimationFrame(flushWheelDelta);
+      } else {
+        wheelFrameRef.current = 0;
+      }
+    }
+
+    function startWheelSmoothing() {
+      if (!wheelFrameRef.current) {
+        wheelFrameRef.current = window.requestAnimationFrame(flushWheelDelta);
+      }
+    }
+
+    function stopWheelSmoothing() {
+      pendingWheelDeltaRef.current = 0;
+      window.cancelAnimationFrame(wheelFrameRef.current);
+      wheelFrameRef.current = 0;
+    }
+
     function handleWheel(event: WheelEvent) {
+      if (isMobileViewport()) {
+        return;
+      }
+
       lockWorkScroll();
 
       if (!isWorkLockedRef.current) {
@@ -336,71 +348,15 @@ export default function Work({
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      virtualScroll.set(virtualScroll.get() + event.deltaY * 0.8);
-      window.scrollTo(0, workLockScrollYRef.current);
-    }
 
-    function stopHoldScroll() {
-      holdDirectionRef.current = 0;
-      window.cancelAnimationFrame(holdAnimationFrameRef.current);
-    }
-
-    function holdScroll() {
-      if (!holdDirectionRef.current || !isWorkLockedRef.current) {
-        return;
-      }
-
-      virtualScroll.set(virtualScroll.get() + holdDirectionRef.current * 18);
-      window.scrollTo(0, workLockScrollYRef.current);
-      holdAnimationFrameRef.current = window.requestAnimationFrame(holdScroll);
-    }
-
-    function handlePointerDown(event: PointerEvent) {
-      if (
-        !isMobileViewport() ||
-        isInteractiveTarget(event.target) ||
-        !sectionElement ||
-        !lockWorkScroll()
-      ) {
-        return;
-      }
-
-      const rect = sectionElement.getBoundingClientRect();
-      holdDirectionRef.current =
-        event.clientY < rect.top + rect.height / 2 ? -1 : 1;
-      window.cancelAnimationFrame(holdAnimationFrameRef.current);
-      holdAnimationFrameRef.current = window.requestAnimationFrame(holdScroll);
-    }
-
-    function handleTouchStart(event: TouchEvent) {
-      const touch = event.touches[0];
-
-      if (!touch || !isMobileViewport()) {
-        return;
-      }
-
-      lastTouchYRef.current = touch.clientY;
-      lockWorkScroll();
-    }
-
-    function handleTouchMove(event: TouchEvent) {
-      const touch = event.touches[0];
-
-      if (!touch || !isMobileViewport() || !isWorkLockedRef.current) {
-        return;
-      }
-
-      event.preventDefault();
-      const deltaY = lastTouchYRef.current - touch.clientY;
-      lastTouchYRef.current = touch.clientY;
-      virtualScroll.set(virtualScroll.get() + deltaY * 1.1);
-      window.scrollTo(0, workLockScrollYRef.current);
+      pendingWheelDeltaRef.current += event.deltaY * 0.8;
+      startWheelSmoothing();
     }
 
     function handleScroll() {
       if (
         isWorkLockedRef.current &&
-        window.scrollY < workLockScrollYRef.current
+        Math.abs(window.scrollY - workLockScrollYRef.current) > 2
       ) {
         window.scrollTo(0, workLockScrollYRef.current);
       }
@@ -411,33 +367,20 @@ export default function Work({
       capture: true,
     });
     window.addEventListener("scroll", handleScroll, { passive: true });
-    sectionElement?.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointerup", stopHoldScroll);
-    window.addEventListener("pointercancel", stopHoldScroll);
-    sectionElement?.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    sectionElement?.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
-    sectionElement?.addEventListener("touchend", stopHoldScroll);
 
     return () => {
       window.removeEventListener("wheel", handleWheel, { capture: true });
       window.removeEventListener("scroll", handleScroll);
-      sectionElement?.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointerup", stopHoldScroll);
-      window.removeEventListener("pointercancel", stopHoldScroll);
-      sectionElement?.removeEventListener("touchstart", handleTouchStart);
-      sectionElement?.removeEventListener("touchmove", handleTouchMove);
-      sectionElement?.removeEventListener("touchend", stopHoldScroll);
-      stopHoldScroll();
+      stopWheelSmoothing();
     };
   }, [scrollYProgress, virtualScroll]);
 
   function handleBackToHome() {
     isWorkLockedRef.current = false;
     workLockScrollYRef.current = 0;
+    pendingWheelDeltaRef.current = 0;
+    window.cancelAnimationFrame(wheelFrameRef.current);
+    wheelFrameRef.current = 0;
     virtualScroll.set(0);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -460,12 +403,12 @@ export default function Work({
             <WorkColumn
               key={`column-${columnIndex}`}
               column={column}
-              virtualScroll={easedVirtualScroll}
+              virtualScroll={desktopEasedVirtualScroll}
             />
           ))}
         </div>
         <div className="block h-full w-full md:hidden">
-          <WorkMobileColumn virtualScroll={mobileEasedVirtualScroll} />
+          <WorkMobileColumn />
         </div>
       </motion.div>
 

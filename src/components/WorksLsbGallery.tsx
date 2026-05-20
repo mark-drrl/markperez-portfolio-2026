@@ -2,6 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import ProjectMediaLightbox from "@/components/ProjectMediaLightbox";
+import {
+  galleryItemClassName,
+  galleryMediaClassName,
+  galleryScrollerClassName,
+  useGalleryScroll,
+} from "@/hooks/useGalleryScroll";
 
 interface GalleryItem {
   type: "image" | "video";
@@ -44,13 +50,10 @@ export default function WorksLsbGallery({
     alt: string;
   } | null>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const targetScrollRef = useRef(0);
-  const currentScrollRef = useRef(0);
-  const animationFrameRef = useRef(0);
-  const snapTimeoutRef = useRef(0);
-  const lastTouchYRef = useRef(0);
   const videoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const items = activeTab === "images" ? imageItems : reelItems;
+
+  useGalleryScroll(scrollerRef, setFocusedIndex, activeTab);
 
   useEffect(() => {
     const scroller = scrollerRef.current;
@@ -59,8 +62,6 @@ export default function WorksLsbGallery({
       return;
     }
 
-    targetScrollRef.current = 0;
-    currentScrollRef.current = 0;
     scroller.scrollTop = 0;
     setFocusedIndex(0);
   }, [activeTab]);
@@ -153,136 +154,6 @@ export default function WorksLsbGallery({
     };
   }, [activeTab, focusedIndex, lightboxItem]);
 
-  useEffect(() => {
-    const scroller = scrollerRef.current;
-
-    if (!scroller) {
-      return;
-    }
-
-    const scrollerElement = scroller;
-    targetScrollRef.current = scroller.scrollTop;
-    currentScrollRef.current = scroller.scrollTop;
-
-    function render() {
-      const currentScroller = scrollerRef.current;
-
-      if (!currentScroller) {
-        return;
-      }
-
-      currentScrollRef.current +=
-        (targetScrollRef.current - currentScrollRef.current) * 0.085;
-      currentScroller.scrollTop = currentScrollRef.current;
-
-      animationFrameRef.current = requestAnimationFrame(render);
-    }
-
-    function snapToNearestItem() {
-      const maxScroll =
-        scrollerElement.scrollHeight - scrollerElement.clientHeight;
-      const viewportCenter =
-        scrollerElement.scrollTop + scrollerElement.clientHeight / 2;
-      const galleryItems = Array.from(
-        scrollerElement.querySelectorAll<HTMLElement>("[data-gallery-item]"),
-      );
-      const nearestItem = galleryItems.reduce<HTMLElement | null>(
-        (nearest, item) => {
-          if (!nearest) {
-            return item;
-          }
-
-          const nearestCenter = nearest.offsetTop + nearest.offsetHeight / 2;
-          const itemCenter = item.offsetTop + item.offsetHeight / 2;
-
-          return Math.abs(itemCenter - viewportCenter) <
-            Math.abs(nearestCenter - viewportCenter)
-            ? item
-            : nearest;
-        },
-        null,
-      );
-
-      if (!nearestItem) {
-        return;
-      }
-
-      const nearestIndex = Number(nearestItem.dataset.galleryIndex ?? 0);
-      setFocusedIndex(nearestIndex);
-      targetScrollRef.current = Math.max(
-        0,
-        Math.min(
-          maxScroll,
-          nearestItem.offsetTop +
-            nearestItem.offsetHeight / 2 -
-            scrollerElement.clientHeight / 2,
-        ),
-      );
-    }
-
-    function handleWheel(event: WheelEvent) {
-      event.preventDefault();
-      scrollerElement.blur();
-      const maxScroll =
-        scrollerElement.scrollHeight - scrollerElement.clientHeight;
-      targetScrollRef.current = Math.max(
-        0,
-        Math.min(maxScroll, targetScrollRef.current + event.deltaY * 0.78),
-      );
-
-      window.clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = window.setTimeout(snapToNearestItem, 160);
-    }
-
-    function handleTouchStart(event: TouchEvent) {
-      const touch = event.touches[0];
-
-      if (!touch) {
-        return;
-      }
-
-      lastTouchYRef.current = touch.clientY;
-    }
-
-    function handleTouchMove(event: TouchEvent) {
-      const touch = event.touches[0];
-
-      if (!touch) {
-        return;
-      }
-
-      event.preventDefault();
-      const maxScroll =
-        scrollerElement.scrollHeight - scrollerElement.clientHeight;
-      const deltaY = lastTouchYRef.current - touch.clientY;
-      lastTouchYRef.current = touch.clientY;
-      targetScrollRef.current = Math.max(
-        0,
-        Math.min(maxScroll, targetScrollRef.current + deltaY * 1.35),
-      );
-
-      window.clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = window.setTimeout(snapToNearestItem, 180);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(render);
-    scrollerElement.addEventListener("wheel", handleWheel, { passive: false });
-    scrollerElement.addEventListener("touchstart", handleTouchStart, {
-      passive: true,
-    });
-    scrollerElement.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
-
-    return () => {
-      window.clearTimeout(snapTimeoutRef.current);
-      cancelAnimationFrame(animationFrameRef.current);
-      scrollerElement.removeEventListener("wheel", handleWheel);
-      scrollerElement.removeEventListener("touchstart", handleTouchStart);
-      scrollerElement.removeEventListener("touchmove", handleTouchMove);
-    };
-  }, []);
-
   return (
     <div className="relative h-full">
       <div className="absolute inset-x-0 top-[7vh] z-50 flex justify-center gap-8 text-[9px] uppercase tracking-[0.28em] text-black/42 [font-family:'JetBrains_Mono','JetBrainsMono','SF_Mono',Consolas,monospace]">
@@ -303,10 +174,7 @@ export default function WorksLsbGallery({
         ))}
       </div>
 
-      <div
-        ref={scrollerRef}
-        className="h-full overflow-y-auto overscroll-contain px-1 py-[20vh]"
-      >
+      <div ref={scrollerRef} className={galleryScrollerClassName}>
         <div
           className={`flex flex-col items-center ${
             activeTab === "reels" ? "gap-4" : "gap-6"
@@ -318,7 +186,7 @@ export default function WorksLsbGallery({
               data-gallery-item
               data-gallery-index={index}
               data-cursor-interactive="true"
-              className={`relative max-md:!w-full cursor-pointer overflow-hidden ${item.className}`}
+              className={`${galleryItemClassName} ${item.className}`}
               onClick={() =>
                 setLightboxItem({
                   type: item.type,
@@ -351,9 +219,7 @@ export default function WorksLsbGallery({
                     videoRefs.current[index] = element;
                   }}
                   src={item.src}
-                  className={`pointer-events-none h-full w-full object-contain contrast-110 transition-[filter] duration-[1800ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    focusedIndex === index ? "grayscale-0" : "grayscale"
-                  }`}
+                  className={`pointer-events-none ${galleryMediaClassName(focusedIndex, index)}`}
                   autoPlay
                   muted
                   loop
@@ -383,9 +249,7 @@ export default function WorksLsbGallery({
                 <img
                   src={item.src}
                   alt={`LSB Yacht Charter gallery image ${index + 1}`}
-                  className={`h-full w-full object-contain contrast-110 transition-[filter] duration-[1800ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    focusedIndex === index ? "grayscale-0" : "grayscale"
-                  }`}
+                  className={galleryMediaClassName(focusedIndex, index)}
                   loading={index < 2 ? "eager" : "lazy"}
                   decoding="async"
                 />

@@ -60,9 +60,23 @@ const replacementCells = [
 ] as const satisfies readonly ReplacementCellDefinition[];
 
 const mobileReplacementCells = [
-  { className: "left-0 top-[-24%] h-[56%] w-full", start: 0.345, end: 0.405 },
-  { className: "left-0 top-[calc(32%+0.5vh)] h-[56%] w-full", start: 0.405, end: 0.465 },
-  { className: "left-0 top-[calc(88%+1vh)] h-[56%] w-full", start: 0.495, end: 0.555 },
+  {
+    className:
+      "left-1/2 top-[calc(22%-56%-0.5vh)] h-[56%] w-full max-w-full -translate-x-1/2",
+    start: 0.345,
+    end: 0.405,
+  },
+  {
+    className: "left-1/2 top-[22%] h-[56%] w-full max-w-full -translate-x-1/2",
+    start: 0.405,
+    end: 0.465,
+  },
+  {
+    className:
+      "left-1/2 top-[calc(22%+56%+0.5vh)] h-[56%] w-full max-w-full -translate-x-1/2",
+    start: 0.495,
+    end: 0.555,
+  },
 ] as const satisfies readonly ReplacementCellDefinition[];
 
 interface CurateProps {
