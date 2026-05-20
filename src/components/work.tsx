@@ -2,6 +2,7 @@
 
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
+import WorkColumnGallery from "@/components/WorkColumnGallery";
 import {
   motion,
   type MotionValue,
@@ -22,6 +23,8 @@ import {
   scrollMobileWorkGalleryToIndex,
   syncMobileWorkToneFromIndex,
 } from "@/lib/mobileWorkScroll";
+import { workColumns } from "@/lib/workColumnLayout";
+import { WORK_ENTER_PROGRESS } from "@/lib/workScrollBridge";
 import { workHeaderNavTone } from "@/lib/workSocialTone";
 import {
   dispatchHomeScrollSync,
@@ -56,49 +59,7 @@ const mobileWorkLoopItems = Array.from(
     })),
 ).flat();
 
-function columnCycleHeight(tiles: readonly { height: number }[]) {
-  return tiles.reduce(
-    (total, tile, index) => total + tile.height + (index > 0 ? 0.5 : 0),
-    0,
-  );
-}
-
-const columns = [
-  {
-    left: "0%",
-    width: "calc((100% - 1vh) / 3)",
-    speed: 0.28,
-    initialY: 0,
-    tiles: [
-      { height: 60.5, image: 0 },
-      { height: 60.5, image: 1 },
-      { height: 60.5, image: 7 },
-    ],
-  },
-  {
-    left: "calc((100% - 1vh) / 3 + 0.5vh)",
-    width: "calc((100% - 1vh) / 3)",
-    speed: 0.56,
-    initialY: -48,
-    tiles: [
-      { height: 60.5, image: 3 },
-      { height: 60.5, image: 2 },
-      { height: 60.5, image: 4 },
-      { height: 60.5, image: 9 },
-    ],
-  },
-  {
-    left: "calc(((100% - 1vh) / 3) * 2 + 1vh)",
-    width: "calc((100% - 1vh) / 3)",
-    speed: 0.84,
-    initialY: 0,
-    tiles: [
-      { height: 57.5, image: 5 },
-      { height: 41.5, image: 6 },
-      { height: 57.5, image: 8 },
-    ],
-  },
-] as const;
+const columns = workColumns;
 
 function getWorkHref(src: string) {
   if (src === "/work/portfolio-1.jpg") return "/works-centurionv1";
@@ -140,96 +101,6 @@ interface WorkProps {
   blur: MotionValue<string>;
   pointerEvents: MotionValue<"none" | "auto">;
   scrollYProgress: MotionValue<number>;
-}
-
-function computeColumnTranslateVh(
-  virtualOffset: number,
-  column: (typeof columns)[number],
-) {
-  const cycleHeight = columnCycleHeight(column.tiles);
-  const travel = (virtualOffset / 900) * column.speed * cycleHeight;
-  const rawOffset =
-    ((travel % cycleHeight) + cycleHeight) % cycleHeight;
-
-  return column.initialY - cycleHeight - rawOffset;
-}
-
-function WorkImage({ src }: { src: string }) {
-  return (
-    <WorkImageLink src={src}>
-      <div className="group relative h-full w-full">
-        <img
-          src={src}
-          alt=""
-          className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
-          loading="lazy"
-          decoding="async"
-        />
-      </div>
-    </WorkImageLink>
-  );
-}
-
-function WorkColumnsDesktop({
-  virtualScroll,
-}: {
-  virtualScroll: MotionValue<number>;
-}) {
-  const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
-
-  const applyColumnTransforms = useCallback((virtualOffset: number) => {
-    columns.forEach((column, columnIndex) => {
-      const columnElement = columnRefs.current[columnIndex];
-
-      if (!columnElement) {
-        return;
-      }
-
-      const translateVh = computeColumnTranslateVh(virtualOffset, column);
-      columnElement.style.transform = `translate3d(0, ${translateVh}vh, 0)`;
-    });
-  }, []);
-
-  useMotionValueEvent(virtualScroll, "change", applyColumnTransforms);
-
-  useEffect(() => {
-    applyColumnTransforms(virtualScroll.get());
-  }, [virtualScroll, applyColumnTransforms]);
-
-  return (
-    <div className="hidden h-full w-full md:block">
-      {columns.map((column, columnIndex) => {
-        const loopedTiles = [...column.tiles, ...column.tiles, ...column.tiles];
-
-        return (
-          <div
-            key={`column-${columnIndex}`}
-            ref={(element) => {
-              columnRefs.current[columnIndex] = element;
-            }}
-            className="absolute top-0 h-full will-change-transform"
-            style={{
-              left: column.left,
-              width: column.width,
-              transform: `translate3d(0, ${computeColumnTranslateVh(virtualScroll.get(), column)}vh, 0)`,
-            }}
-          >
-            <div className="flex flex-col gap-[0.5vh]">
-              {loopedTiles.map((tile, tileIndex) => (
-                <div
-                  key={`${tile.image}-${tileIndex}`}
-                  className="w-full overflow-hidden bg-neutral-300"
-                  style={{ height: `${tile.height}vh` }}
-                >
-                  <WorkImage src={workImages[tile.image]} />
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function WorkMobileGallery({
@@ -349,6 +220,12 @@ export default function Work({
   const sectionRef = useRef<HTMLElement>(null);
   const mobileScrollerRef = useRef<HTMLDivElement | null>(null);
   const virtualScroll = useMotionValue(0);
+  const [galleryLinksEnabled, setGalleryLinksEnabled] = useState(false);
+
+  useMotionValueEvent(scrollYProgress, "change", (progress) => {
+    setGalleryLinksEnabled(progress >= WORK_ENTER_PROGRESS);
+  });
+
   const socialNavTone = useTransform(virtualScroll, (offset) =>
     workHeaderNavTone(offset, {
       isMobile:
@@ -450,7 +327,10 @@ export default function Work({
       }}
     >
       <motion.div className="absolute inset-0 h-full w-full overflow-hidden">
-        <WorkColumnsDesktop virtualScroll={virtualScroll} />
+        <WorkColumnGallery
+          virtualScroll={virtualScroll}
+          linksEnabled={galleryLinksEnabled}
+        />
         <WorkMobileGallery
           virtualScroll={virtualScroll}
           onScrollerReady={(scroller) => {

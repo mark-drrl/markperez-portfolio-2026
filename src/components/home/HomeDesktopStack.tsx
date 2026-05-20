@@ -11,6 +11,7 @@ import {
   desktopCurateOpacity,
   desktopHeroOpacity,
 } from "@/lib/mobileHomeOpacity";
+import { WORK_ENTER_PROGRESS } from "@/lib/workScrollBridge";
 import { motion, type MotionValue, useTransform } from "framer-motion";
 import type { CSSProperties } from "react";
 
@@ -95,9 +96,9 @@ export default function HomeDesktopStack({
       opacity > 0.9 ? "auto" : "none",
   );
   const curatePointerEvents = useTransform(
-    curateOpacity,
-    (opacity): CSSProperties["pointerEvents"] =>
-      opacity > 0.9 ? "auto" : "none",
+    scrollYProgress,
+    (progress): CSSProperties["pointerEvents"] =>
+      progress >= 0.56 ? "none" : progress > 0.34 ? "auto" : "none",
   );
 
   const heroVisibility = useTransform(
@@ -132,8 +133,8 @@ export default function HomeDesktopStack({
     [0, 0.58, 0.64, 1],
     ["blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)"],
   );
-  const workPointerEvents = useTransform(workOpacity, (value) =>
-    value > 0.9 ? "auto" : "none",
+  const workPointerEvents = useTransform(scrollYProgress, (progress) =>
+    progress >= WORK_ENTER_PROGRESS ? "auto" : "none",
   );
 
   return (

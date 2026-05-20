@@ -33,6 +33,8 @@ export const workScrollBridge = {
   lastFrameTime: 0,
   /** After "back to home", ignore work snap until scroll progress drops below exit band. */
   blockWorkEngagement: false,
+  /** True after virtual scroll was aligned for the Curate → Work crossfade. */
+  handoffVirtualSynced: false,
 };
 
 export function isWorkGalleryScrollActive() {
@@ -76,14 +78,23 @@ export function engageWorkScroll() {
 
   workScrollBridge.isLocked = true;
   workScrollBridge.lockScrollY = getWorkAnchorScrollY();
-  lenis.scrollTo(workScrollBridge.lockScrollY, { immediate: true, force: true });
 
-  syncVirtualScrollValues(0);
+  const drift = Math.abs(lenis.scroll - workScrollBridge.lockScrollY);
+
+  if (drift > 3) {
+    lenis.scrollTo(workScrollBridge.lockScrollY, { immediate: true, force: true });
+  }
+
+  const currentVirtual = workScrollBridge.virtualScroll?.get() ?? 0;
+  workScrollBridge.targetVirtualScroll = currentVirtual;
+  workScrollBridge.displayVirtualScroll = currentVirtual;
+  workScrollBridge.virtualScroll?.set(currentVirtual);
 }
 
 export function unlockWorkScroll() {
   workScrollBridge.isLocked = false;
   workScrollBridge.lockScrollY = 0;
+  workScrollBridge.handoffVirtualSynced = false;
 }
 
 export function registerWorkScrollMotionValues(
@@ -109,6 +120,7 @@ export function resetHomeScrollPosition() {
   unlockWorkScroll();
   resetWorkVirtualScroll();
   workScrollBridge.blockWorkEngagement = true;
+  workScrollBridge.handoffVirtualSynced = false;
 
   const lenis = workScrollBridge.lenis;
 
@@ -152,6 +164,17 @@ export function syncWorkScrollEngagement() {
     }
   }
 
+  if (progress < 0.56) {
+    workScrollBridge.handoffVirtualSynced = false;
+  } else if (
+    progress >= 0.58 &&
+    progress < WORK_ENTER_PROGRESS &&
+    !workScrollBridge.handoffVirtualSynced
+  ) {
+    syncVirtualScrollValues(0);
+    workScrollBridge.handoffVirtualSynced = true;
+  }
+
   if (progress >= WORK_ENTER_PROGRESS) {
     if (!workScrollBridge.isLocked) {
       engageWorkScroll();
@@ -178,12 +201,20 @@ export function tickWorkVirtualScrollSmoothing(time: number) {
   const deltaTime = Math.min(0.05, Math.max(0.001, (time - lastTime) / 1000));
   workScrollBridge.lastFrameTime = time;
 
-  workScrollBridge.displayVirtualScroll = damp(
-    workScrollBridge.displayVirtualScroll,
-    workScrollBridge.targetVirtualScroll,
-    SMOOTH_SCROLL_LAMBDA,
-    deltaTime,
-  );
+  const target = workScrollBridge.targetVirtualScroll;
+  const current = workScrollBridge.displayVirtualScroll;
+
+  if (Math.abs(target - current) < 1.5) {
+    workScrollBridge.displayVirtualScroll = target;
+  } else {
+    workScrollBridge.displayVirtualScroll = damp(
+      current,
+      target,
+      SMOOTH_SCROLL_LAMBDA,
+      deltaTime,
+    );
+  }
+
   virtualScroll.set(workScrollBridge.displayVirtualScroll);
 }
 

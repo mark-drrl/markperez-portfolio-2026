@@ -1,7 +1,9 @@
+import { getMobileFocusedImageIndex } from "@/lib/mobileWorkScroll";
 import {
-  getMobileFocusedImageIndex,
-  getMobileWorkScrollStride,
-} from "@/lib/mobileWorkScroll";
+  workColumns,
+  workImageIndexAtColumnSample,
+  type WorkColumnDefinition,
+} from "@/lib/workColumnLayout";
 import { luminanceToNavTone } from "@/lib/sectionNavTone";
 
 /** Approximate perceived luminance after grayscale + contrast (0 = dark, 1 = light). */
@@ -20,66 +22,18 @@ const WORK_IMAGE_LUMINANCE: Record<number, number> = {
 
 const HEADER_SAMPLE_VH = 14;
 
-type WorkColumn = {
-  left: string;
-  width: string;
-  speed: number;
-  initialY: number;
-  tiles: readonly { height: number; image: number }[];
-};
-
-function columnCycleHeight(tiles: readonly { height: number }[]) {
-  return tiles.reduce(
-    (total, tile, index) => total + tile.height + (index > 0 ? 0.5 : 0),
-    0,
-  );
-}
-
-function computeColumnTranslateVh(virtualOffset: number, column: WorkColumn) {
-  const cycleHeight = columnCycleHeight(column.tiles);
-  const travel = (virtualOffset / 900) * column.speed * cycleHeight;
-  const rawOffset = ((travel % cycleHeight) + cycleHeight) % cycleHeight;
-
-  return column.initialY - cycleHeight - rawOffset;
-}
-
-function imageIndexAtColumnSample(
-  virtualOffset: number,
-  column: WorkColumn,
-  sampleVh: number,
-) {
-  const translateVh = computeColumnTranslateVh(virtualOffset, column);
-  const cycleHeight = columnCycleHeight(column.tiles);
-  let yInColumn = sampleVh - translateVh;
-  yInColumn = ((yInColumn % cycleHeight) + cycleHeight) % cycleHeight;
-
-  let cursor = 0;
-
-  for (const tile of column.tiles) {
-    const tileEnd = cursor + tile.height;
-
-    if (yInColumn >= cursor && yInColumn < tileEnd) {
-      return tile.image;
-    }
-
-    cursor = tileEnd + 0.5;
-  }
-
-  return column.tiles[0]?.image ?? 0;
-}
-
 export function workHeaderNavTone(
   virtualOffset: number,
   options: {
     isMobile: boolean;
     imageCount: number;
-    leftColumn?: WorkColumn;
+    leftColumn?: WorkColumnDefinition;
   },
 ) {
   const imageIndex = options.isMobile
     ? getMobileFocusedImageIndex(virtualOffset)
     : options.leftColumn
-      ? imageIndexAtColumnSample(
+      ? workImageIndexAtColumnSample(
           virtualOffset,
           options.leftColumn,
           HEADER_SAMPLE_VH,

@@ -4,10 +4,8 @@ import MarkPerezBrand from "@/components/MarkPerezBrand";
 import SectionInlineCopy from "@/components/SectionInlineCopy";
 import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
-import {
-  desktopCurateWorkHandoffImageIndices,
-  workGalleryImages,
-} from "@/constants/workGalleryImages";
+import { workGalleryImages } from "@/constants/workGalleryImages";
+import { desktopCurateReplacementCells } from "@/lib/workColumnLayout";
 import {
   mobileBackgroundBlurFilter,
   mobileCurateBlur,
@@ -34,51 +32,6 @@ interface ReplacementCellDefinition {
   end: number;
   origin?: string;
 }
-
-const replacementCells = [
-  {
-    className: "left-0 top-0 h-[60.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.33,
-    end: 0.42,
-    origin: "42% 58%",
-  },
-  {
-    className: "left-0 top-[calc(60.5%+0.5vh)] h-[60.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.36,
-    end: 0.45,
-    origin: "58% 72%",
-  },
-  {
-    className: "left-[calc((100%-1vh)/3+0.5vh)] top-[13%] h-[60.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.39,
-    end: 0.48,
-    origin: "46% 48%",
-  },
-  {
-    className: "left-[calc((100%-1vh)/3+0.5vh)] -top-[48%] h-[60.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.42,
-    end: 0.51,
-    origin: "64% 34%",
-  },
-  {
-    className: "left-[calc((100%-1vh)/3+0.5vh)] top-[74%] h-[60.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.45,
-    end: 0.54,
-    origin: "38% 68%",
-  },
-  {
-    className: "left-[calc(((100%-1vh)/3)*2+1vh)] top-0 h-[57.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.48,
-    end: 0.57,
-    origin: "52% 54%",
-  },
-  {
-    className: "left-[calc(((100%-1vh)/3)*2+1vh)] top-[calc(57.5%+0.5vh)] h-[41.5%] w-[calc((100%-1vh)/3)]",
-    start: 0.51,
-    end: 0.6,
-    origin: "36% 62%",
-  },
-] as const satisfies readonly ReplacementCellDefinition[];
 
 const mobileReplacementCells = [
   {
@@ -120,10 +73,7 @@ function ReplacementImage({
   mobileLite = false,
 }: ReplacementImageProps) {
   const isMobile = variant === "mobile";
-  const imageIndex = isMobile
-    ? index % workGalleryImages.length
-    : (desktopCurateWorkHandoffImageIndices[index] ?? index);
-  const src = workGalleryImages[imageIndex % workGalleryImages.length];
+  const src = workGalleryImages[index];
   const opacity = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
@@ -132,7 +82,7 @@ function ReplacementImage({
   const filter = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
-    isMobile ? ["blur(22px)", "blur(0px)"] : ["blur(38px)", "blur(10px)"],
+    isMobile ? ["blur(22px)", "blur(0px)"] : ["blur(38px)", "blur(0px)"],
   );
   const scale = useTransform(
     scrollYProgress,
@@ -177,9 +127,7 @@ function ReplacementImage({
           alt=""
           loading={isMobile ? "lazy" : "eager"}
           decoding="async"
-          className={`h-full w-full object-cover grayscale ${
-            isMobile ? "" : "blur-[10px]"
-          }`}
+          className="h-full w-full object-cover grayscale"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
@@ -362,7 +310,7 @@ export default function Curate({
   const navOpacity = mobileBrandOpacity;
   const curateNavToneCell = mobileLite
     ? mobileReplacementCells[0]
-    : replacementCells[5];
+    : { start: 0.48, end: 0.57 };
   const navBackgroundTone = useTransform(scrollYProgress, (latest) =>
     cellRevealTone(
       latest,
@@ -433,10 +381,15 @@ export default function Curate({
     return px > 0 ? `blur(${px}px)` : "blur(0px)";
   });
   const mobileTextBlur = useTransform(scrollYProgress, () => "blur(0px)");
+  const desktopPreviewOpacity = useTransform(
+    scrollYProgress,
+    [0, 0.33, 0.42, 0.54, 0.6],
+    [0, 0, 1, 1, 0],
+  );
 
   return (
     <motion.section
-      className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#EAEAEA] p-12 text-black pointer-events-none ${mobileLite ? "overflow-x-visible overflow-y-hidden" : "overflow-hidden"}`}
+      className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#EAEAEA] text-black pointer-events-none ${mobileLite ? "overflow-x-visible overflow-y-hidden p-12" : "overflow-hidden"}`}
       style={{
         opacity: mobileLite ? 1 : opacity,
         ...(blur ? { filter: blur } : {}),
@@ -444,39 +397,46 @@ export default function Curate({
         visibility: mobileLite ? "visible" : visibility,
       }}
     >
-      <motion.div className="absolute inset-0 flex h-full w-full flex-col justify-between p-12">
-      <div className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden opacity-95 blur-[10px] md:block">
-        {replacementCells.map((cell, index) => (
-          <ReplacementImage
-            key={cell.className}
-            cell={cell}
-            index={index}
-            scrollYProgress={scrollYProgress}
-            variant="desktop"
-          />
-        ))}
-      </div>
+      {!mobileLite ? (
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-95"
+          style={{ opacity: desktopPreviewOpacity }}
+          aria-hidden="true"
+        >
+          {desktopCurateReplacementCells.map((cell) => (
+            <ReplacementImage
+              key={cell.className}
+              cell={cell}
+              index={cell.imageIndex}
+              scrollYProgress={scrollYProgress}
+              variant="desktop"
+            />
+          ))}
+        </motion.div>
+      ) : null}
       <motion.div
-        className={mobileSectionGridLayer}
-        style={
-          mobileLite
-            ? { opacity: mobileGridOpacity, filter: mobileBackgroundFilter }
-            : undefined
-        }
+        className={`absolute inset-0 flex h-full w-full flex-col justify-between ${mobileLite ? "p-12" : "p-12"}`}
       >
-        {mobileReplacementCells.map((cell, index) => (
-          <ReplacementImage
-            key={cell.className}
-            cell={cell}
-            index={index}
-            scrollYProgress={scrollYProgress}
-            variant="mobile"
-            mobileLite={mobileLite}
-          />
-        ))}
-      </motion.div>
-
-      <div className="pointer-events-none absolute inset-0 z-[2] hidden bg-[#EAEAEA]/22 backdrop-blur-[10px] md:block" />
+        {mobileLite ? (
+          <motion.div
+            className={mobileSectionGridLayer}
+            style={{
+              opacity: mobileGridOpacity,
+              filter: mobileBackgroundFilter,
+            }}
+          >
+            {mobileReplacementCells.map((cell, index) => (
+              <ReplacementImage
+                key={cell.className}
+                cell={cell}
+                index={index}
+                scrollYProgress={scrollYProgress}
+                variant="mobile"
+                mobileLite={mobileLite}
+              />
+            ))}
+          </motion.div>
+        ) : null}
 
       <MarkPerezBrand
         className="absolute left-8 top-8 z-20"
