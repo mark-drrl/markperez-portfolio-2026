@@ -5,11 +5,7 @@ export function useGalleryScroll(
   setFocusedIndex: (index: number) => void,
   resetKey?: string | number,
 ) {
-  const targetScrollRef = useRef(0);
-  const currentScrollRef = useRef(0);
-  const animationFrameRef = useRef(0);
   const snapTimeoutRef = useRef(0);
-  const lastTouchYRef = useRef(0);
   const focusFrameRef = useRef(0);
 
   useEffect(() => {
@@ -89,18 +85,14 @@ export function useGalleryScroll(
 
       setFocusedIndex(nearestIndex);
 
-      if (isMobile()) {
+      if (isMobile() || !smooth) {
         return;
       }
 
-      targetScrollRef.current = snapTop;
-
-      if (smooth) {
-        scrollerElement.scrollTo({
-          top: snapTop,
-          behavior: "smooth",
-        });
-      }
+      scrollerElement.scrollTo({
+        top: snapTop,
+        behavior: "smooth",
+      });
     }
 
     function scheduleFocusUpdate() {
@@ -114,104 +106,58 @@ export function useGalleryScroll(
       });
     }
 
-    function handleMobileScroll() {
-      scheduleFocusUpdate();
-    }
-
-    if (isMobile()) {
-      const initialFocusFrame = window.requestAnimationFrame(() => {
-        updateFocusedFromViewport();
-      });
-
-      scrollerElement.addEventListener("scroll", handleMobileScroll, {
-        passive: true,
-      });
-
-      return () => {
-        window.cancelAnimationFrame(initialFocusFrame);
-        window.cancelAnimationFrame(focusFrameRef.current);
-        scrollerElement.removeEventListener("scroll", handleMobileScroll);
-      };
-    }
-
-    targetScrollRef.current = scrollerElement.scrollTop;
-    currentScrollRef.current = scrollerElement.scrollTop;
-
-    function render() {
-      const currentScroller = scrollerRef.current;
-
-      if (!currentScroller) {
-        return;
-      }
-
-      currentScrollRef.current +=
-        (targetScrollRef.current - currentScrollRef.current) * 0.085;
-      currentScroller.scrollTop = currentScrollRef.current;
-      animationFrameRef.current = requestAnimationFrame(render);
-    }
-
-    function handleWheel(event: WheelEvent) {
-      event.preventDefault();
-      scrollerElement.blur();
-      const maxScroll =
-        scrollerElement.scrollHeight - scrollerElement.clientHeight;
-      targetScrollRef.current = Math.max(
-        0,
-        Math.min(maxScroll, targetScrollRef.current + event.deltaY * 0.78),
-      );
-
+    function handleNativeScroll() {
       scheduleFocusUpdate();
       window.clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = window.setTimeout(() => snapToNearestItem(false), 160);
-    }
 
-    function handleTouchStart(event: TouchEvent) {
-      const touch = event.touches[0];
-
-      if (!touch) {
+      if (isMobile()) {
         return;
       }
 
-      lastTouchYRef.current = touch.clientY;
+      snapTimeoutRef.current = window.setTimeout(() => snapToNearestItem(true), 140);
     }
 
-    function handleTouchMove(event: TouchEvent) {
-      const touch = event.touches[0];
+    const initialFocusFrame = window.requestAnimationFrame(() => {
+      updateFocusedFromViewport();
+    });
 
-      if (!touch) {
+    function handleDocumentWheel(event: WheelEvent) {
+      if (isMobile()) {
+        return;
+      }
+
+      const target = event.target;
+
+      if (target instanceof Node && scrollerElement.contains(target)) {
+        return;
+      }
+
+      const maxScroll =
+        scrollerElement.scrollHeight - scrollerElement.clientHeight;
+
+      if (maxScroll <= 0) {
         return;
       }
 
       event.preventDefault();
-      const maxScroll =
-        scrollerElement.scrollHeight - scrollerElement.clientHeight;
-      const deltaY = lastTouchYRef.current - touch.clientY;
-      lastTouchYRef.current = touch.clientY;
-      targetScrollRef.current = Math.max(
+      scrollerElement.scrollTop = Math.max(
         0,
-        Math.min(maxScroll, targetScrollRef.current + deltaY * 1.35),
+        Math.min(maxScroll, scrollerElement.scrollTop + event.deltaY),
       );
-
-      scheduleFocusUpdate();
-      window.clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = window.setTimeout(() => snapToNearestItem(false), 180);
+      handleNativeScroll();
     }
 
-    animationFrameRef.current = requestAnimationFrame(render);
-    scrollerElement.addEventListener("wheel", handleWheel, { passive: false });
-    scrollerElement.addEventListener("touchstart", handleTouchStart, {
+    scrollerElement.addEventListener("scroll", handleNativeScroll, {
       passive: true,
     });
-    scrollerElement.addEventListener("touchmove", handleTouchMove, {
-      passive: false,
-    });
+    document.addEventListener("wheel", handleDocumentWheel, { passive: false });
 
     return () => {
+      window.cancelAnimationFrame(initialFocusFrame);
+      window.cancelAnimationFrame(focusFrameRef.current);
       window.clearTimeout(snapTimeoutRef.current);
-      cancelAnimationFrame(animationFrameRef.current);
-      scrollerElement.removeEventListener("wheel", handleWheel);
-      scrollerElement.removeEventListener("touchstart", handleTouchStart);
-      scrollerElement.removeEventListener("touchmove", handleTouchMove);
+      scrollerElement.removeEventListener("scroll", handleNativeScroll);
+      document.removeEventListener("wheel", handleDocumentWheel);
     };
   }, [scrollerRef, setFocusedIndex, resetKey]);
 }

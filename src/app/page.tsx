@@ -16,6 +16,7 @@ import {
 } from "@/lib/homeScroll";
 import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
 import Lenis from "lenis";
+import { restoreNativeDocumentScroll } from "@/lib/restoreDocumentScroll";
 import {
   handleWorkLenisVirtualScroll,
   isWorkGalleryScrollActive,
@@ -186,7 +187,15 @@ export default function Home() {
 
   useEffect(() => {
     if (pathname !== "/") {
+      const lenis = workScrollBridge.lenis;
+
+      if (lenis) {
+        lenis.destroy();
+      }
+
       workScrollBridge.lenis = null;
+      unlockWorkScroll();
+      restoreNativeDocumentScroll();
       return;
     }
 
@@ -195,6 +204,7 @@ export default function Home() {
     function teardown() {
       workScrollBridge.lenis = null;
       unlockWorkScroll();
+      restoreNativeDocumentScroll();
     }
 
     if (!desktopQuery.matches) {
