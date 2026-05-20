@@ -512,7 +512,7 @@ export default function Work({
         </p>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-6 px-8 pb-[max(1.75rem,calc(env(safe-area-inset-bottom,0px)+0.85rem))] pt-3 md:pb-8 md:pt-0">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-6 px-8 pb-7 pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] md:pb-8 md:pt-0">
         <button
           type="button"
           onClick={handleBackToHome}

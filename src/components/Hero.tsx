@@ -79,7 +79,7 @@ export default function Hero({
 
   return (
     <motion.section
-      className="relative h-screen w-full overflow-hidden bg-[#efeeeb]"
+      className={`relative w-full overflow-hidden bg-[#efeeeb] ${mobileLite ? "h-full" : "h-screen"}`}
       style={sectionStyle}
     >
       {isVideoActive ? (

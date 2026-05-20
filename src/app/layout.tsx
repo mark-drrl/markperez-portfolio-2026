@@ -18,10 +18,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "MARK PEREZ",
   description: "Selected Works",
-  icons: {
-    icon: "/icon/favicon.png",
-    shortcut: "/icon/favicon.png",
-  },
 };
 
 export default function RootLayout({
@@ -33,7 +29,6 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      style={{ colorScheme: 'dark' }}
     >
       <body>
         <SiteLayoutClient>{children}</SiteLayoutClient>

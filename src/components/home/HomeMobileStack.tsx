@@ -124,7 +124,7 @@ export default function HomeMobileStack({ scrollYProgress }: HomeMobileStackProp
   return (
     <div className="contents md:hidden">
       <motion.div
-        className="absolute inset-0 h-screen w-full will-change-[opacity,filter]"
+        className="absolute inset-0 h-full w-full will-change-[opacity,filter]"
         style={{
           zIndex: heroZ,
           opacity: heroOpacity,
@@ -179,7 +179,7 @@ export default function HomeMobileStack({ scrollYProgress }: HomeMobileStackProp
       </motion.div>
 
       <motion.div
-        className="pointer-events-none absolute inset-0 z-[45] h-screen w-full will-change-opacity"
+        className="pointer-events-none absolute inset-0 z-[45] h-full w-full will-change-opacity"
         style={{ opacity: workOpacity }}
       >
         <Work

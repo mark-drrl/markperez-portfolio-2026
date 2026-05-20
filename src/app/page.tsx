@@ -6,6 +6,7 @@ import FluidDistortion from "@/components/FluidDistortion";
 import ProceduralGrain from "@/components/ProceduralGrain";
 import { useHomeScrollProgress } from "@/hooks/useHomeScrollProgress";
 import { useFinePointer } from "@/hooks/useFinePointer";
+import { useMobileViewportHeight } from "@/hooks/useMobileViewportHeight";
 import {
   HOME_SCROLL_SYNC_EVENT,
   HOME_WORK_SCROLL_PROGRESS,
@@ -89,6 +90,7 @@ export default function Home() {
     mass: 0.55,
   });
   const scrollYProgress = useHomeScrollProgress(containerRef);
+  useMobileViewportHeight(pathname === "/");
 
   const syncHomeScrollFromProgress = useCallback((progress: number) => {
     const enterThreshold = workThresholdForViewport();
@@ -366,7 +368,7 @@ export default function Home() {
         className="pointer-events-none absolute top-[78%] h-px w-px md:top-[64%]"
         aria-hidden="true"
       />
-      <div className="sticky top-0 h-[100dvh] w-full overflow-hidden md:h-screen">
+      <div className="sticky top-0 h-[var(--app-vh,100svh)] w-full overflow-hidden bg-[#EAEAEA] md:h-screen">
         <HomeMobileStack scrollYProgress={scrollYProgress} />
         <HomeDesktopStack scrollYProgress={scrollYProgress} />
       </div>
