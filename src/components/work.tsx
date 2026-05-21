@@ -98,7 +98,7 @@ const socialButtons = workPageSocialLinks;
 
 interface WorkProps {
   opacity: MotionValue<number>;
-  blur: MotionValue<string>;
+  galleryHandoffBlur: MotionValue<string>;
   pointerEvents: MotionValue<"none" | "auto">;
   scrollYProgress: MotionValue<number>;
 }
@@ -212,7 +212,7 @@ function WorkMobileGallery({
 
 export default function Work({
   opacity,
-  blur,
+  galleryHandoffBlur,
   pointerEvents,
   scrollYProgress,
 }: WorkProps) {
@@ -322,11 +322,13 @@ export default function Work({
       className="absolute inset-0 h-full w-full overflow-hidden bg-[#EAEAEA] text-black"
       style={{
         opacity,
-        filter: blur,
         pointerEvents,
       }}
     >
-      <motion.div className="absolute inset-0 h-full w-full overflow-hidden">
+      <motion.div
+        className="absolute inset-0 h-full w-full overflow-hidden"
+        style={{ filter: galleryHandoffBlur }}
+      >
         <WorkColumnGallery
           virtualScroll={virtualScroll}
           linksEnabled={galleryLinksEnabled}

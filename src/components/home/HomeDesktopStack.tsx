@@ -75,14 +75,23 @@ export default function HomeDesktopStack({
   const createOpacity = useTransform(scrollYProgress, desktopCreateOpacity);
   const createBlur = useTransform(
     scrollYProgress,
-    [0, 0.14, 0.18, 0.52, 0.58, 1],
-    ["blur(4px)", "blur(4px)", "blur(0px)", "blur(0px)", "blur(8px)", "blur(8px)"],
+    [0, 0.14, 0.18, 0.48, 0.52, 0.56, 0.58, 1],
+    [
+      "blur(4px)",
+      "blur(4px)",
+      "blur(0px)",
+      "blur(0px)",
+      "blur(0px)",
+      "blur(6px)",
+      "blur(10px)",
+      "blur(10px)",
+    ],
   );
   const curateOpacity = useTransform(scrollYProgress, desktopCurateOpacity);
   const curateBlur = useTransform(
     scrollYProgress,
-    [0, 0.34, 0.42, 1],
-    ["blur(24px)", "blur(24px)", "blur(0px)", "blur(0px)"],
+    [0, 0.34, 0.42, 0.52, 0.58, 1],
+    ["blur(24px)", "blur(24px)", "blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)"],
   );
 
   const conveyPointerEvents = useTransform(
@@ -128,10 +137,11 @@ export default function HomeDesktopStack({
 
     return (progress - 0.58) / 0.06;
   });
-  const workBlur = useTransform(
+  /** Handoff blur on the gallery only — must clear by WORK_ENTER (locked progress never exceeds 0.64). */
+  const workGalleryHandoffBlur = useTransform(
     scrollYProgress,
-    [0, 0.58, 0.64, 1],
-    ["blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)"],
+    [0, 0.58, 0.62, 0.64, 1],
+    ["blur(0px)", "blur(18px)", "blur(8px)", "blur(0px)", "blur(0px)"],
   );
   const workPointerEvents = useTransform(scrollYProgress, (progress) =>
     progress >= WORK_ENTER_PROGRESS ? "auto" : "none",
@@ -191,7 +201,7 @@ export default function HomeDesktopStack({
       <motion.div className="pointer-events-none absolute inset-0 z-[45] h-screen w-full">
         <Work
           opacity={workOpacity}
-          blur={workBlur}
+          galleryHandoffBlur={workGalleryHandoffBlur}
           pointerEvents={workPointerEvents}
           scrollYProgress={scrollYProgress}
         />

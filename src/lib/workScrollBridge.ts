@@ -85,10 +85,15 @@ export function engageWorkScroll() {
     lenis.scrollTo(workScrollBridge.lockScrollY, { immediate: true, force: true });
   }
 
-  const currentVirtual = workScrollBridge.virtualScroll?.get() ?? 0;
-  workScrollBridge.targetVirtualScroll = currentVirtual;
-  workScrollBridge.displayVirtualScroll = currentVirtual;
-  workScrollBridge.virtualScroll?.set(currentVirtual);
+  if (!workScrollBridge.handoffVirtualSynced) {
+    syncVirtualScrollValues(0);
+    workScrollBridge.handoffVirtualSynced = true;
+  } else {
+    const currentVirtual = workScrollBridge.virtualScroll?.get() ?? 0;
+    workScrollBridge.targetVirtualScroll = currentVirtual;
+    workScrollBridge.displayVirtualScroll = currentVirtual;
+    workScrollBridge.virtualScroll?.set(currentVirtual);
+  }
 }
 
 export function unlockWorkScroll() {
@@ -166,11 +171,7 @@ export function syncWorkScrollEngagement() {
 
   if (progress < 0.56) {
     workScrollBridge.handoffVirtualSynced = false;
-  } else if (
-    progress >= 0.58 &&
-    progress < WORK_ENTER_PROGRESS &&
-    !workScrollBridge.handoffVirtualSynced
-  ) {
+  } else if (progress >= 0.58 && !workScrollBridge.handoffVirtualSynced) {
     syncVirtualScrollValues(0);
     workScrollBridge.handoffVirtualSynced = true;
   }

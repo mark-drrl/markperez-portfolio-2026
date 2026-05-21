@@ -381,10 +381,34 @@ export default function Curate({
     return px > 0 ? `blur(${px}px)` : "blur(0px)";
   });
   const mobileTextBlur = useTransform(scrollYProgress, () => "blur(0px)");
-  const desktopPreviewOpacity = useTransform(
+  const desktopPreviewOpacity = useTransform(scrollYProgress, (progress) => {
+    let reveal = 0;
+
+    if (progress >= 0.42) {
+      reveal = 1;
+    } else if (progress >= 0.33) {
+      reveal = (progress - 0.33) / 0.09;
+    }
+
+    if (progress <= 0.58) {
+      return reveal;
+    }
+
+    if (progress >= 0.64) {
+      return 0;
+    }
+
+    return reveal * (1 - (progress - 0.58) / 0.06);
+  });
+  const desktopHandoffWashOpacity = useTransform(
     scrollYProgress,
-    [0, 0.33, 0.42, 0.54, 0.6],
-    [0, 0, 1, 1, 0],
+    [0.5, 0.56, 0.58, 0.64, 0.68],
+    [0, 0.45, 0.85, 0.5, 0],
+  );
+  const desktopPreviewHandoffBlur = useTransform(
+    scrollYProgress,
+    [0.5, 0.58, 0.62, 0.64],
+    ["blur(0px)", "blur(10px)", "blur(12px)", "blur(0px)"],
   );
 
   return (
@@ -398,21 +422,31 @@ export default function Curate({
       }}
     >
       {!mobileLite ? (
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-0 overflow-hidden opacity-95"
-          style={{ opacity: desktopPreviewOpacity }}
-          aria-hidden="true"
-        >
-          {desktopCurateReplacementCells.map((cell) => (
-            <ReplacementImage
-              key={cell.className}
-              cell={cell}
-              index={cell.imageIndex}
-              scrollYProgress={scrollYProgress}
-              variant="desktop"
-            />
-          ))}
-        </motion.div>
+        <>
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden opacity-95 md:block"
+            style={{
+              opacity: desktopPreviewOpacity,
+              filter: desktopPreviewHandoffBlur,
+            }}
+            aria-hidden="true"
+          >
+            {desktopCurateReplacementCells.map((cell) => (
+              <ReplacementImage
+                key={cell.className}
+                cell={cell}
+                index={cell.imageIndex}
+                scrollYProgress={scrollYProgress}
+                variant="desktop"
+              />
+            ))}
+          </motion.div>
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-[1] hidden bg-[#EAEAEA]/22 backdrop-blur-[10px] md:block"
+            style={{ opacity: desktopHandoffWashOpacity }}
+            aria-hidden="true"
+          />
+        </>
       ) : null}
       <motion.div
         className={`absolute inset-0 flex h-full w-full flex-col justify-between ${mobileLite ? "p-12" : "p-12"}`}
