@@ -94,7 +94,7 @@ export default function Home() {
 
   const syncHomeScrollFromProgress = useCallback((progress: number) => {
     const enterThreshold = workThresholdForViewport();
-    const exitThreshold = enterThreshold - 0.03;
+    const exitThreshold = enterThreshold - 0.05;
     let inWork = inWorkRef.current;
 
     if (!inWork && progress >= enterThreshold) {
@@ -228,7 +228,7 @@ export default function Home() {
     }
 
     const lenis = new Lenis({
-      lerp: 0.075,
+      lerp: 0.068,
       smoothWheel: true,
       virtualScroll: handleWorkLenisVirtualScroll,
     });
@@ -238,8 +238,6 @@ export default function Home() {
 
     function raf(time: number) {
       lenis.raf(time);
-      syncWorkScrollEngagement();
-      tickWorkVirtualScrollSmoothing(time);
 
       const main = containerRef.current;
 
@@ -247,10 +245,38 @@ export default function Home() {
         scrollYProgress.set(getHomeScrollProgress(main));
       }
 
+      syncWorkScrollEngagement();
+      tickWorkVirtualScrollSmoothing(time);
+
       animationFrameId = requestAnimationFrame(raf);
     }
 
     animationFrameId = requestAnimationFrame(raf);
+
+    if (process.env.NODE_ENV === "development") {
+      (
+        window as Window & {
+          __portfolioScrollDebug?: {
+            getState: () => Record<string, unknown>;
+            scrollToProgress: (progress: number) => number;
+          };
+        }
+      ).__portfolioScrollDebug = {
+        getState: () => ({
+          motionProgress: scrollYProgress.get(),
+          homeProgress: getHomeScrollProgress(containerRef.current),
+          bridge: {
+            isLocked: workScrollBridge.isLocked,
+            targetVirtualScroll: workScrollBridge.targetVirtualScroll,
+            displayVirtualScroll: workScrollBridge.displayVirtualScroll,
+            handoffPrepared: workScrollBridge.handoffPrepared,
+            lenisScroll: workScrollBridge.lenis?.scroll ?? null,
+          },
+        }),
+        scrollToProgress: (progress: number) =>
+          scrollHomeToProgress(progress, containerRef.current),
+      };
+    }
 
     const onBreakpointChange = () => {
       if (!desktopQuery.matches) {
@@ -300,21 +326,29 @@ export default function Home() {
       cursorX.set(event.clientX);
       cursorY.set(event.clientY);
 
-      if (isWorkGalleryScrollActive()) {
-        setIsHoveringClickable(false);
-        resetMagneticElement();
-        return;
-      }
-
       const target = event.target;
       const clickableElement =
         target instanceof Element
           ? target.closest<HTMLElement>(clickableSelector)
           : null;
 
+      if (isWorkGalleryScrollActive()) {
+        const workGalleryTarget =
+          target instanceof Element
+            ? target.closest<HTMLElement>("[data-work-gallery-link]")
+            : null;
+
+        if (!workGalleryTarget) {
+          setIsHoveringClickable(false);
+          resetMagneticElement();
+          return;
+        }
+      }
+
       if (
         !clickableElement ||
-        clickableElement.closest("[data-no-magnetic]")
+        (clickableElement.closest("[data-no-magnetic]") &&
+          !clickableElement.closest("[data-work-gallery-link]"))
       ) {
         setIsHoveringClickable(false);
         resetMagneticElement();

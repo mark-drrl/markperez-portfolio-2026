@@ -42,7 +42,7 @@ function WorkImageLink({
         href={href}
         prefetch={false}
         className="block h-full w-full"
-        data-no-magnetic
+        data-work-gallery-link
       >
         {children}
       </Link>
@@ -65,7 +65,11 @@ function GalleryImage({
         <img
           src={src}
           alt=""
-          className="h-full w-full object-cover grayscale contrast-125 brightness-[0.96] transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
+          className={`h-full w-full object-cover grayscale transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+            linksEnabled
+              ? "contrast-125 brightness-[0.96] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
+              : ""
+          }`}
           loading="lazy"
           decoding="async"
         />
@@ -109,9 +113,7 @@ export default function WorkColumnGallery({
   }, [virtualScroll, applyColumnTransforms]);
 
   return (
-    <div
-      className={`hidden h-full w-full md:block ${linksEnabled ? "pointer-events-auto" : "pointer-events-none"} ${className}`}
-    >
+    <div className={`hidden h-full w-full md:block ${className}`}>
       {workColumns.map((column, columnIndex) => {
         const loopedTiles = [...column.tiles, ...column.tiles, ...column.tiles];
 
@@ -121,7 +123,7 @@ export default function WorkColumnGallery({
             ref={(element) => {
               columnRefs.current[columnIndex] = element;
             }}
-            className="absolute top-0 h-full will-change-transform"
+            className="absolute top-0 h-full will-change-transform [transition:none]"
             style={{
               left: column.left,
               width: column.width,

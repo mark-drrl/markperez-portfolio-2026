@@ -13,11 +13,14 @@ export type WorkColumnDefinition = {
   tiles: readonly WorkColumnTile[];
 };
 
+/** Virtual pixels for one full speed-percent travel unit (see `computeColumnTranslateVh`). */
+export const WORK_VIRTUAL_SCROLL_DISTANCE = 1400;
+
 export const workColumns = [
   {
     left: "0%",
     width: "calc((100% - 1vh) / 3)",
-    speed: 0.28,
+    speed: 10,
     initialY: 0,
     tiles: [
       { height: 60.5, image: 0 },
@@ -28,7 +31,7 @@ export const workColumns = [
   {
     left: "calc((100% - 1vh) / 3 + 0.5vh)",
     width: "calc((100% - 1vh) / 3)",
-    speed: 0.56,
+    speed: 20,
     initialY: -48,
     tiles: [
       { height: 60.5, image: 3 },
@@ -40,7 +43,7 @@ export const workColumns = [
   {
     left: "calc(((100% - 1vh) / 3) * 2 + 1vh)",
     width: "calc((100% - 1vh) / 3)",
-    speed: 0.84,
+    speed: 30,
     initialY: 0,
     tiles: [
       { height: 57.5, image: 5 },
@@ -139,7 +142,9 @@ export function computeColumnTranslateVh(
   column: WorkColumnDefinition,
 ) {
   const cycleHeight = columnCycleHeight(column.tiles);
-  const travel = (virtualOffset / 900) * column.speed * cycleHeight;
+  const speedFactor = column.speed / 100;
+  const travel =
+    (virtualOffset / WORK_VIRTUAL_SCROLL_DISTANCE) * speedFactor * cycleHeight;
   const rawOffset =
     ((travel % cycleHeight) + cycleHeight) % cycleHeight;
 

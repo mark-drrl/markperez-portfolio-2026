@@ -1,27 +1,34 @@
-import { DESKTOP_CURATE_WORK_HANDOFF_START } from "@/lib/desktopHomeTransitions";
+import {
+  dampVirtualScroll,
+  DESKTOP_GALLERY_HANDOFF_OFFSET,
+  GALLERY_SCROLL_ENABLE_DELAY_MS,
+  getDesktopWorkScrollPhase,
+  shouldPrepareHandoffAnchor,
+  shouldResetHandoffAnchor,
+  shouldRunVirtualScrollSmoothing,
+  VIRTUAL_SCROLL_VELOCITY_DECAY,
+  VIRTUAL_SCROLL_VELOCITY_GAIN,
+  WORK_ENTER_PROGRESS,
+  WORK_EXIT_PROGRESS,
+  WORK_HANDOFF_START,
+  WORK_UNLOCK_PROGRESS,
+  WHEEL_TO_VIRTUAL,
+} from "@/lib/desktopWorkScroll";
 import { getDefaultMobileVirtualOffset } from "@/lib/mobileWorkScroll";
 import type { MotionValue } from "framer-motion";
 import type Lenis from "lenis";
 
-export const WORK_ENTER_PROGRESS = 0.64;
-/** Hysteresis: stay in work gallery until scroll drops clearly below enter threshold. */
-export const WORK_EXIT_PROGRESS = 0.61;
-const WHEEL_TO_VIRTUAL = 0.9;
-const SMOOTH_SCROLL_LAMBDA = 11;
+export {
+  DESKTOP_GALLERY_HANDOFF_OFFSET,
+  WORK_ENTER_PROGRESS,
+  WORK_EXIT_PROGRESS,
+  WORK_HANDOFF_START,
+} from "@/lib/desktopWorkScroll";
 
 type VirtualScrollData = {
   deltaY: number;
   event: WheelEvent | TouchEvent;
 };
-
-function damp(
-  current: number,
-  target: number,
-  lambda: number,
-  deltaTime: number,
-) {
-  return current + (target - current) * (1 - Math.exp(-lambda * deltaTime));
-}
 
 export const workScrollBridge = {
   scrollYProgress: null as MotionValue<number> | null,
@@ -32,25 +39,56 @@ export const workScrollBridge = {
   targetVirtualScroll: 0,
   displayVirtualScroll: 0,
   lastFrameTime: 0,
-  /** After "back to home", ignore work snap until scroll progress drops below exit band. */
   blockWorkEngagement: false,
-  /** True after virtual scroll was aligned for the Curate → Work crossfade. */
-  handoffVirtualSynced: false,
+  /** Set once per Curate → Work approach; cleared when leaving the handoff band upward. */
+  handoffPrepared: false,
+  virtualScrollVelocity: 0,
+  /** `performance.now()` timestamp when gallery wheel input is allowed. */
+  galleryScrollEnabledAt: 0,
 };
 
 export function isWorkGalleryScrollActive() {
   return workScrollBridge.isLocked;
 }
 
-function isDesktopViewport() {
-  return window.matchMedia("(min-width: 768px)").matches;
+export function isWorkGalleryVirtualScrollReady() {
+  if (!workScrollBridge.isLocked) {
+    return false;
+  }
+
+  return performance.now() >= workScrollBridge.galleryScrollEnabledAt;
 }
 
-function getScrollProgress() {
+function isDesktopViewport() {
+  return (
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 768px)").matches
+  );
+}
+
+/** Lenis + lock floor — avoids motion-value lag mis-routing wheel events. */
+function getEffectiveScrollProgress() {
+  if (workScrollBridge.isLocked) {
+    return WORK_ENTER_PROGRESS;
+  }
+
+  const lenis = workScrollBridge.lenis;
+
+  if (lenis && isDesktopViewport()) {
+    const main = document.querySelector("main");
+
+    if (main) {
+      const maxScroll = main.scrollHeight - window.innerHeight;
+
+      if (maxScroll > 0) {
+        return Math.min(1, Math.max(0, lenis.scroll / maxScroll));
+      }
+    }
+  }
+
   return workScrollBridge.scrollYProgress?.get() ?? 0;
 }
 
-/** Pixel offset where Framer scroll progress hits the work section (0.64). */
 function getWorkAnchorScrollY() {
   const main = document.querySelector("main");
 
@@ -69,7 +107,89 @@ function syncVirtualScrollValues(value: number) {
   workScrollBridge.virtualScroll?.set(value);
 }
 
-/** Snap Lenis to the work anchor and clear inertial scroll. */
+function prepareHandoffAnchor() {
+  if (
+    workScrollBridge.handoffPrepared &&
+    workScrollBridge.targetVirtualScroll > 0
+  ) {
+    return;
+  }
+
+  syncVirtualScrollValues(DESKTOP_GALLERY_HANDOFF_OFFSET);
+  workScrollBridge.handoffPrepared = true;
+}
+
+/** Apply gallery wheel delta (shared by Lenis virtualScroll + native fallback). */
+export function applyGalleryWheelDelta(
+  deltaY: number,
+  event?: WheelEvent | TouchEvent,
+) {
+  if (!isDesktopViewport() || !workScrollBridge.virtualScroll) {
+    return false;
+  }
+
+  const phase = getDesktopWorkScrollPhase(
+    getEffectiveScrollProgress(),
+    workScrollBridge.isLocked,
+  );
+
+  if (phase !== "gallery") {
+    return false;
+  }
+
+  if (!workScrollBridge.isLocked) {
+    engageWorkScroll();
+  }
+
+  if (event?.cancelable) {
+    event.preventDefault();
+  }
+
+  pinLenisToWorkAnchor();
+
+  if (!isWorkGalleryVirtualScrollReady()) {
+    workScrollBridge.virtualScrollVelocity = 0;
+    return true;
+  }
+
+  const wheelImpulse = deltaY * WHEEL_TO_VIRTUAL;
+
+  if (wheelImpulse < 0 && workScrollBridge.targetVirtualScroll <= 0) {
+    workScrollBridge.targetVirtualScroll = 0;
+    workScrollBridge.virtualScrollVelocity = 0;
+    pinLenisToWorkAnchor();
+    return true;
+  }
+
+  workScrollBridge.virtualScrollVelocity += wheelImpulse * VIRTUAL_SCROLL_VELOCITY_GAIN;
+  workScrollBridge.targetVirtualScroll = Math.max(
+    0,
+    workScrollBridge.targetVirtualScroll + wheelImpulse,
+  );
+
+  pinLenisToWorkAnchor();
+
+  return true;
+}
+
+function pinLenisToWorkAnchor() {
+  const lenis = workScrollBridge.lenis;
+
+  if (!lenis || !workScrollBridge.isLocked) {
+    return;
+  }
+
+  const drift = Math.abs(lenis.scroll - workScrollBridge.lockScrollY);
+
+  if (drift > 2) {
+    lenis.scrollTo(workScrollBridge.lockScrollY, {
+      immediate: true,
+      force: true,
+    });
+  }
+}
+
+/** Lock main scroll at the Work section — does not reset gallery position. */
 export function engageWorkScroll() {
   const lenis = workScrollBridge.lenis;
 
@@ -79,28 +199,17 @@ export function engageWorkScroll() {
 
   workScrollBridge.isLocked = true;
   workScrollBridge.lockScrollY = getWorkAnchorScrollY();
-
-  const drift = Math.abs(lenis.scroll - workScrollBridge.lockScrollY);
-
-  if (drift > 3) {
-    lenis.scrollTo(workScrollBridge.lockScrollY, { immediate: true, force: true });
-  }
-
-  if (!workScrollBridge.handoffVirtualSynced) {
-    syncVirtualScrollValues(0);
-    workScrollBridge.handoffVirtualSynced = true;
-  } else {
-    const currentVirtual = workScrollBridge.virtualScroll?.get() ?? 0;
-    workScrollBridge.targetVirtualScroll = currentVirtual;
-    workScrollBridge.displayVirtualScroll = currentVirtual;
-    workScrollBridge.virtualScroll?.set(currentVirtual);
-  }
+  workScrollBridge.galleryScrollEnabledAt =
+    performance.now() + GALLERY_SCROLL_ENABLE_DELAY_MS;
+  workScrollBridge.virtualScrollVelocity = 0;
+  pinLenisToWorkAnchor();
 }
 
 export function unlockWorkScroll() {
   workScrollBridge.isLocked = false;
   workScrollBridge.lockScrollY = 0;
-  workScrollBridge.handoffVirtualSynced = false;
+  workScrollBridge.virtualScrollVelocity = 0;
+  workScrollBridge.galleryScrollEnabledAt = 0;
 }
 
 export function registerWorkScrollMotionValues(
@@ -109,6 +218,18 @@ export function registerWorkScrollMotionValues(
 ) {
   workScrollBridge.scrollYProgress = scrollYProgress;
   workScrollBridge.virtualScroll = virtualScroll;
+
+  if (isDesktopViewport()) {
+    const mobileOffsetLeak = workScrollBridge.targetVirtualScroll > 500;
+
+    if (mobileOffsetLeak) {
+      syncVirtualScrollValues(DESKTOP_GALLERY_HANDOFF_OFFSET);
+    } else {
+      virtualScroll.set(workScrollBridge.displayVirtualScroll);
+    }
+  } else {
+    virtualScroll.set(workScrollBridge.displayVirtualScroll);
+  }
 }
 
 export function unregisterWorkScrollMotionValues() {
@@ -118,15 +239,18 @@ export function unregisterWorkScrollMotionValues() {
 }
 
 export function resetWorkVirtualScroll() {
-  syncVirtualScrollValues(getDefaultMobileVirtualOffset());
+  syncVirtualScrollValues(
+    isDesktopViewport()
+      ? DESKTOP_GALLERY_HANDOFF_OFFSET
+      : getDefaultMobileVirtualOffset(),
+  );
 }
 
-/** Hero reset — clears work lock, virtual gallery offset, and Lenis/window scroll. */
 export function resetHomeScrollPosition() {
   unlockWorkScroll();
   resetWorkVirtualScroll();
   workScrollBridge.blockWorkEngagement = true;
-  workScrollBridge.handoffVirtualSynced = false;
+  workScrollBridge.handoffPrepared = false;
 
   const lenis = workScrollBridge.lenis;
 
@@ -140,26 +264,12 @@ export function resetHomeScrollPosition() {
   }
 }
 
-function pinLenisIfDrifted() {
-  const lenis = workScrollBridge.lenis;
-
-  if (!lenis || !workScrollBridge.isLocked) {
-    return;
-  }
-
-  const drift = Math.abs(lenis.scroll - workScrollBridge.lockScrollY);
-
-  if (drift > 4) {
-    lenis.scrollTo(workScrollBridge.lockScrollY, { immediate: true, force: true });
-  }
-}
-
 export function syncWorkScrollEngagement() {
   if (!isDesktopViewport()) {
     return;
   }
 
-  const progress = getScrollProgress();
+  const progress = getEffectiveScrollProgress();
 
   if (workScrollBridge.blockWorkEngagement) {
     if (progress < WORK_EXIT_PROGRESS) {
@@ -170,34 +280,54 @@ export function syncWorkScrollEngagement() {
     }
   }
 
-  if (progress < 0.56) {
-    workScrollBridge.handoffVirtualSynced = false;
-  } else if (
-    progress >= DESKTOP_CURATE_WORK_HANDOFF_START &&
-    !workScrollBridge.handoffVirtualSynced
-  ) {
-    syncVirtualScrollValues(0);
-    workScrollBridge.handoffVirtualSynced = true;
+  if (shouldResetHandoffAnchor(progress)) {
+    workScrollBridge.handoffPrepared = false;
   }
 
-  if (progress >= WORK_ENTER_PROGRESS) {
+  if (shouldPrepareHandoffAnchor(progress, workScrollBridge.handoffPrepared)) {
+    prepareHandoffAnchor();
+  } else if (
+    progress >= WORK_ENTER_PROGRESS &&
+    !workScrollBridge.handoffPrepared
+  ) {
+    prepareHandoffAnchor();
+  }
+
+  const phase = getDesktopWorkScrollPhase(
+    progress,
+    workScrollBridge.isLocked,
+  );
+
+  if (phase === "gallery" || workScrollBridge.isLocked) {
     if (!workScrollBridge.isLocked) {
       engageWorkScroll();
+    } else {
+      pinLenisToWorkAnchor();
     }
 
     return;
   }
 
-  if (progress < WORK_EXIT_PROGRESS) {
+  if (workScrollBridge.isLocked && progress < WORK_UNLOCK_PROGRESS) {
     unlockWorkScroll();
   }
 }
 
-/** Luxurious eased column motion — runs in the same RAF as Lenis. */
 export function tickWorkVirtualScrollSmoothing(time: number) {
   const virtualScroll = workScrollBridge.virtualScroll;
 
-  if (!virtualScroll || !isDesktopViewport() || !workScrollBridge.isLocked) {
+  if (!virtualScroll || !isDesktopViewport()) {
+    workScrollBridge.lastFrameTime = time;
+    return;
+  }
+
+  const progress = getEffectiveScrollProgress();
+  const phase = getDesktopWorkScrollPhase(
+    progress,
+    workScrollBridge.isLocked,
+  );
+
+  if (!shouldRunVirtualScrollSmoothing(phase, workScrollBridge.isLocked)) {
     workScrollBridge.lastFrameTime = time;
     return;
   }
@@ -206,16 +336,30 @@ export function tickWorkVirtualScrollSmoothing(time: number) {
   const deltaTime = Math.min(0.05, Math.max(0.001, (time - lastTime) / 1000));
   workScrollBridge.lastFrameTime = time;
 
+  if (
+    isWorkGalleryVirtualScrollReady() &&
+    Math.abs(workScrollBridge.virtualScrollVelocity) > 0.05
+  ) {
+    workScrollBridge.virtualScrollVelocity *= VIRTUAL_SCROLL_VELOCITY_DECAY;
+    workScrollBridge.targetVirtualScroll = Math.max(
+      0,
+      workScrollBridge.targetVirtualScroll + workScrollBridge.virtualScrollVelocity,
+    );
+
+    if (Math.abs(workScrollBridge.virtualScrollVelocity) < 0.08) {
+      workScrollBridge.virtualScrollVelocity = 0;
+    }
+  }
+
   const target = workScrollBridge.targetVirtualScroll;
   const current = workScrollBridge.displayVirtualScroll;
 
-  if (Math.abs(target - current) < 1.5) {
+  if (Math.abs(target - current) < 0.25) {
     workScrollBridge.displayVirtualScroll = target;
   } else {
-    workScrollBridge.displayVirtualScroll = damp(
+    workScrollBridge.displayVirtualScroll = dampVirtualScroll(
       current,
       target,
-      SMOOTH_SCROLL_LAMBDA,
       deltaTime,
     );
   }
@@ -228,50 +372,25 @@ export function handleWorkLenisVirtualScroll(data: VirtualScrollData): boolean {
     return true;
   }
 
-  const progress = getScrollProgress();
-  const lenis = workScrollBridge.lenis;
-  const virtualScroll = workScrollBridge.virtualScroll;
+  const progress = getEffectiveScrollProgress();
 
   if (workScrollBridge.blockWorkEngagement && progress >= WORK_EXIT_PROGRESS) {
     unlockWorkScroll();
     return true;
   }
 
-  if (progress < WORK_EXIT_PROGRESS) {
-    if (workScrollBridge.isLocked) {
-      unlockWorkScroll();
-    }
-
+  if (!workScrollBridge.lenis || !workScrollBridge.virtualScroll) {
     return true;
   }
 
-  const inWorkGallery =
-    workScrollBridge.isLocked || progress >= WORK_ENTER_PROGRESS;
-
-  if (!inWorkGallery || !lenis || !virtualScroll) {
-    return true;
+  if (
+    applyGalleryWheelDelta(
+      data.deltaY,
+      data.event instanceof WheelEvent ? data.event : undefined,
+    )
+  ) {
+    return false;
   }
 
-  const { deltaY, event } = data;
-
-  if (deltaY < 0 && workScrollBridge.targetVirtualScroll <= 0) {
-    unlockWorkScroll();
-    return true;
-  }
-
-  if (!workScrollBridge.isLocked) {
-    engageWorkScroll();
-  }
-
-  if (event.cancelable) {
-    event.preventDefault();
-  }
-
-  workScrollBridge.targetVirtualScroll = Math.max(
-    0,
-    workScrollBridge.targetVirtualScroll + deltaY * WHEEL_TO_VIRTUAL,
-  );
-  pinLenisIfDrifted();
-
-  return false;
+  return true;
 }

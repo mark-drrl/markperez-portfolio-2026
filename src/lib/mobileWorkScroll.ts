@@ -58,6 +58,10 @@ export function getDefaultMobileVirtualOffset() {
 }
 
 export function syncMobileWorkGalleryBridge(offset: number) {
+  if (!isMobileWorkViewport()) {
+    return;
+  }
+
   workScrollBridge.targetVirtualScroll = offset;
   workScrollBridge.displayVirtualScroll = offset;
 }
@@ -90,6 +94,10 @@ export function syncMobileWorkToneFromIndex(
   virtualScroll: { set(value: number): void },
   index: number,
 ) {
+  if (!isMobileWorkViewport()) {
+    return;
+  }
+
   const offset = getMobileWorkAnchorBase() + index * getMobileWorkScrollStride();
   syncMobileWorkGalleryBridge(offset);
   virtualScroll.set(offset);

@@ -6,9 +6,10 @@ import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import {
-  desktopCurateHandoffWashOpacity,
-  desktopCuratePreviewHandoffBlurPx,
+  desktopCuratePreviewLayerBlurPx,
   desktopCuratePreviewOpacity,
+  desktopCurateSubtitleOpacity,
+  desktopCurateTextOpacity,
   blurPxToFilter,
 } from "@/lib/desktopHomeTransitions";
 import { desktopCurateReplacementCells } from "@/lib/workColumnLayout";
@@ -83,8 +84,9 @@ function ReplacementImage({
   const opacity = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
-    isMobile ? [0, 0.72] : [0, 0.6],
+    isMobile ? [0, 0.72] : [0, 1],
   );
+  const revealMid = cell.start + (cell.end - cell.start) * 0.72;
   const filter = useTransform(scrollYProgress, (latest) => {
     if (isMobile) {
       const amount = Math.min(
@@ -92,9 +94,7 @@ function ReplacementImage({
         1,
       );
 
-      const px = 22 * (1 - amount);
-
-      return blurPxToFilter(px);
+      return blurPxToFilter(22 * (1 - amount));
     }
 
     const amount = Math.min(
@@ -102,15 +102,23 @@ function ReplacementImage({
       1,
     );
 
-    if (amount <= 0.65) {
-      const local = amount / 0.65;
+    let px = 0;
 
-      return blurPxToFilter(38 * (1 - local) + 12 * local);
+    if (amount <= 0.72) {
+      const local = amount / 0.72;
+
+      px = 38 * (1 - local) + 10 * local;
+    } else {
+      const local = (amount - 0.72) / 0.28;
+
+      px = 10 * (1 - local);
     }
 
-    const local = (amount - 0.65) / 0.35;
+    if (amount < 0.92) {
+      px = Math.max(px, 10);
+    }
 
-    return blurPxToFilter(12 * (1 - local));
+    return blurPxToFilter(px);
   });
   const scale = useTransform(
     scrollYProgress,
@@ -281,21 +289,20 @@ export default function Curate({
   scrollYProgress,
   mobileLite = false,
 }: CurateProps) {
-  const textOpacity = useTransform(scrollYProgress, [0.58, 0.66], [1, 0]);
+  const textOpacity = useTransform(scrollYProgress, desktopCurateTextOpacity);
   const textBlur = useTransform(
     scrollYProgress,
-    [0.58, 0.66],
-    ["blur(0px)", "blur(22px)"],
+    [0.6, 0.72],
+    ["blur(0px)", "blur(6px)"],
   );
   const subtitleOpacity = useTransform(
     scrollYProgress,
-    [0.39, 0.45, 0.58, 0.66],
-    [0, 1, 1, 0],
+    desktopCurateSubtitleOpacity,
   );
   const subtitleBlur = useTransform(
     scrollYProgress,
-    [0.39, 0.45, 0.58, 0.66],
-    ["blur(12px)", "blur(0px)", "blur(0px)", "blur(22px)"],
+    [0.39, 0.45, 0.6, 0.72],
+    ["blur(12px)", "blur(0px)", "blur(0px)", "blur(6px)"],
   );
   const mobileBrandOpacity = useTransform(scrollYProgress, (latest) => {
     if (!mobileLite) {
@@ -413,14 +420,9 @@ export default function Curate({
     scrollYProgress,
     desktopCuratePreviewOpacity,
   );
-  const desktopHandoffWashOpacity = useTransform(
-    scrollYProgress,
-    desktopCurateHandoffWashOpacity,
+  const desktopPreviewLayerBlur = useTransform(scrollYProgress, (progress) =>
+    blurPxToFilter(desktopCuratePreviewLayerBlurPx(progress)),
   );
-  const desktopPreviewHandoffBlur = useTransform(scrollYProgress, (progress) =>
-    blurPxToFilter(desktopCuratePreviewHandoffBlurPx(progress)),
-  );
-
   return (
     <motion.section
       className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#EAEAEA] text-black pointer-events-none ${mobileLite ? "overflow-x-visible overflow-y-hidden p-12" : "overflow-hidden"}`}
@@ -432,31 +434,24 @@ export default function Curate({
       }}
     >
       {!mobileLite ? (
-        <>
-          <motion.div
-            className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden opacity-95 md:block"
-            style={{
-              opacity: desktopPreviewOpacity,
-              filter: desktopPreviewHandoffBlur,
-            }}
-            aria-hidden="true"
-          >
-            {desktopCurateReplacementCells.map((cell) => (
-              <ReplacementImage
-                key={cell.className}
-                cell={cell}
-                index={cell.imageIndex}
-                scrollYProgress={scrollYProgress}
-                variant="desktop"
-              />
-            ))}
-          </motion.div>
-          <motion.div
-            className="pointer-events-none absolute inset-0 z-[1] hidden bg-[#EAEAEA]/22 backdrop-blur-[10px] md:block"
-            style={{ opacity: desktopHandoffWashOpacity }}
-            aria-hidden="true"
-          />
-        </>
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden md:block"
+          style={{
+            opacity: desktopPreviewOpacity,
+            filter: desktopPreviewLayerBlur,
+          }}
+          aria-hidden="true"
+        >
+          {desktopCurateReplacementCells.map((cell) => (
+            <ReplacementImage
+              key={cell.className}
+              cell={cell}
+              index={cell.imageIndex}
+              scrollYProgress={scrollYProgress}
+              variant="desktop"
+            />
+          ))}
+        </motion.div>
       ) : null}
       <motion.div
         className={`absolute inset-0 flex h-full w-full flex-col justify-between ${mobileLite ? "p-12" : "p-12"}`}

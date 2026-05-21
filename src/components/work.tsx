@@ -1,19 +1,8 @@
 "use client";
 
+import DesktopWorkView from "@/components/work/DesktopWorkView";
 import { workGalleryImages } from "@/constants/workGalleryImages";
-import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
-import WorkColumnGallery from "@/components/WorkColumnGallery";
-import {
-  motion,
-  type MotionValue,
-  useMotionValue,
-  useMotionValueEvent,
-  useTransform,
-} from "framer-motion";
 import { GalleryImage } from "@/components/GalleryMedia";
-import MarkPerezBrand from "@/components/MarkPerezBrand";
-import WorkSocialLinks from "@/components/WorkSocialLinks";
-import { HOME_SCROLL_SYNC_EVENT } from "@/lib/homeScroll";
 import {
   getCenteredWorkGalleryIndex,
   maintainMobileWorkInfiniteScroll,
@@ -23,21 +12,18 @@ import {
   scrollMobileWorkGalleryToIndex,
   syncMobileWorkToneFromIndex,
 } from "@/lib/mobileWorkScroll";
-import { workColumns } from "@/lib/workColumnLayout";
-import { WORK_ENTER_PROGRESS } from "@/lib/workScrollBridge";
-import { workHeaderNavTone } from "@/lib/workSocialTone";
 import {
   dispatchHomeScrollSync,
+  HOME_SCROLL_SYNC_EVENT,
   requestHomeScrollTop,
 } from "@/lib/homeScroll";
 import {
   registerWorkScrollMotionValues,
   resetHomeScrollPosition,
-  unlockWorkScroll,
   unregisterWorkScrollMotionValues,
-  workScrollBridge,
 } from "@/lib/workScrollBridge";
 import Link from "next/link";
+import { motion, type MotionValue, useMotionValue } from "framer-motion";
 import {
   type ReactNode,
   useCallback,
@@ -59,8 +45,6 @@ const mobileWorkLoopItems = Array.from(
     })),
 ).flat();
 
-const columns = workColumns;
-
 function getWorkHref(src: string) {
   if (src === "/work/portfolio-1.jpg") return "/works-centurionv1";
   if (src === "/work/portfolio-2.png") return "/works-lifestyle";
@@ -80,12 +64,7 @@ function WorkImageLink({ src, children }: { src: string; children: ReactNode }) 
 
   if (href) {
     return (
-      <Link
-        href={href}
-        prefetch={false}
-        className="block h-full w-full"
-        data-no-magnetic
-      >
+      <Link href={href} prefetch={false} className="block h-full w-full" data-no-magnetic>
         {children}
       </Link>
     );
@@ -94,15 +73,14 @@ function WorkImageLink({ src, children }: { src: string; children: ReactNode }) 
   return <div className="h-full w-full">{children}</div>;
 }
 
-const socialButtons = workPageSocialLinks;
-
 interface WorkProps {
-  sectionPresence: MotionValue<number>;
-  galleryOpacity: MotionValue<number>;
-  chromeOpacity: MotionValue<number>;
-  galleryHandoffBlur: MotionValue<string>;
-  pointerEvents: MotionValue<"none" | "auto">;
   scrollYProgress: MotionValue<number>;
+  pointerEvents: MotionValue<"none" | "auto">;
+  /** @deprecated Desktop motion is computed inside DesktopWorkView */
+  sectionPresence?: MotionValue<number>;
+  galleryOpacity?: MotionValue<number>;
+  chromeOpacity?: MotionValue<number>;
+  galleryHandoffBlur?: MotionValue<string>;
 }
 
 function WorkMobileGallery({
@@ -153,6 +131,11 @@ function WorkMobileGallery({
   }, [updateFocusedFromScroll]);
 
   useEffect(() => {
+    if (!isMobileWorkViewport()) {
+      onScrollerReady(null);
+      return;
+    }
+
     const scroller = scrollerRef.current;
 
     onScrollerReady(scroller);
@@ -167,9 +150,7 @@ function WorkMobileGallery({
       handleScrollerScroll();
     });
 
-    scroller.addEventListener("scroll", handleScrollerScroll, {
-      passive: true,
-    });
+    scroller.addEventListener("scroll", handleScrollerScroll, { passive: true });
     window.visualViewport?.addEventListener("resize", handleScrollerScroll);
     window.visualViewport?.addEventListener("scroll", handleScrollerScroll);
     window.addEventListener("resize", handleScrollerScroll);
@@ -212,45 +193,29 @@ function WorkMobileGallery({
   );
 }
 
+/** Work section — desktop panel + mobile scroll gallery. */
 export default function Work({
-  sectionPresence,
-  galleryOpacity,
-  chromeOpacity,
-  galleryHandoffBlur,
-  pointerEvents,
   scrollYProgress,
+  pointerEvents,
 }: WorkProps) {
-  const [dubaiTime, setDubaiTime] = useState("");
-  const sectionRef = useRef<HTMLElement>(null);
   const mobileScrollerRef = useRef<HTMLDivElement | null>(null);
-  const virtualScroll = useMotionValue(0);
-  const [galleryLinksEnabled, setGalleryLinksEnabled] = useState(false);
-
-  useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    setGalleryLinksEnabled(progress >= WORK_ENTER_PROGRESS);
-  });
-
-  const socialNavTone = useTransform(virtualScroll, (offset) =>
-    workHeaderNavTone(offset, {
-      isMobile:
-        typeof window !== "undefined" &&
-        window.matchMedia("(max-width: 767px)").matches,
-      imageCount: workImages.length,
-      leftColumn: columns[0],
-    }),
-  );
+  const mobileVirtualScroll = useMotionValue(0);
 
   useEffect(() => {
-    registerWorkScrollMotionValues(scrollYProgress, virtualScroll);
-
-    if (isMobileWorkViewport()) {
-      syncMobileWorkToneFromIndex(virtualScroll, MOBILE_CURATE_WORK_HANDOFF_INDEX);
+    if (!isMobileWorkViewport()) {
+      return;
     }
+
+    registerWorkScrollMotionValues(scrollYProgress, mobileVirtualScroll);
+    syncMobileWorkToneFromIndex(
+      mobileVirtualScroll,
+      MOBILE_CURATE_WORK_HANDOFF_INDEX,
+    );
 
     return () => {
       unregisterWorkScrollMotionValues();
     };
-  }, [scrollYProgress, virtualScroll]);
+  }, [scrollYProgress, mobileVirtualScroll]);
 
   const scrollMobileGalleryToHandoff = useCallback(() => {
     const scroller = mobileScrollerRef.current;
@@ -285,35 +250,13 @@ export default function Work({
     };
   }, [scrollMobileGalleryToHandoff]);
 
-  useEffect(() => {
-    const formatter = new Intl.DateTimeFormat("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "Asia/Dubai",
-      timeZoneName: "short",
-    });
-
-    function updateTime() {
-      setDubaiTime(formatter.format(new Date()));
-    }
-
-    updateTime();
-    const intervalId = window.setInterval(updateTime, 30_000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, []);
-
   function handleBackToHome() {
     requestHomeScrollTop();
 
     if (window.location.pathname === "/") {
       window.history.replaceState(null, "", "/");
       resetHomeScrollPosition();
-      window.requestAnimationFrame(() => {
-        dispatchHomeScrollSync();
-      });
+      window.requestAnimationFrame(() => dispatchHomeScrollSync());
       return;
     }
 
@@ -321,113 +264,34 @@ export default function Work({
   }
 
   return (
-    <motion.section
-      ref={sectionRef}
-      className="absolute inset-0 h-full w-full overflow-hidden bg-[#EAEAEA] text-black"
-      style={{
-        opacity: sectionPresence,
-        pointerEvents,
-      }}
-    >
-      <motion.div
-        className="absolute inset-0 h-full w-full overflow-hidden will-change-[opacity,filter]"
-        style={{
-          opacity: galleryOpacity,
-          filter: galleryHandoffBlur,
-        }}
-      >
-        <WorkColumnGallery
-          virtualScroll={virtualScroll}
-          linksEnabled={galleryLinksEnabled}
+    <>
+      <div className="absolute inset-0 hidden md:block">
+        <DesktopWorkView
+          scrollYProgress={scrollYProgress}
+          pointerEvents={pointerEvents}
         />
+      </div>
+
+      <motion.section
+        className="absolute inset-0 h-full w-full overflow-hidden bg-[#EAEAEA] md:hidden"
+        style={{ pointerEvents }}
+      >
         <WorkMobileGallery
-          virtualScroll={virtualScroll}
+          virtualScroll={mobileVirtualScroll}
           onScrollerReady={(scroller) => {
             mobileScrollerRef.current = scroller;
           }}
         />
-      </motion.div>
-
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[8]"
-        style={{ opacity: chromeOpacity }}
-      >
-        <div className="absolute inset-0 bg-[#EAEAEA]/10" />
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 z-[8] h-44"
-        style={{
-          background: "rgba(155, 155, 155, 0.02)",
-          backgroundBlendMode: "soft-light",
-          filter: "blur(32px)",
-          WebkitBackdropFilter: "blur(2px)",
-          backdropFilter: "blur(2px)",
-          WebkitMaskImage:
-            "linear-gradient(to bottom, black 0%, black 25%, rgba(0,0,0,0.64) 60%, rgba(0,0,0,0.18) 88%, transparent 100%)",
-          maskImage:
-            "linear-gradient(to bottom, black 0%, black 25%, rgba(0,0,0,0.64) 60%, rgba(0,0,0,0.18) 88%, transparent 100%)",
-        }}
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute inset-x-0 bottom-0 z-[8] h-48"
-        style={{
-          background: "rgba(155, 155, 155, 0.02)",
-          backgroundBlendMode: "soft-light",
-          filter: "blur(32px)",
-          WebkitBackdropFilter: "blur(2px)",
-          backdropFilter: "blur(2px)",
-          WebkitMaskImage:
-            "linear-gradient(to top, black 0%, black 25%, rgba(0,0,0,0.66) 62%, rgba(0,0,0,0.18) 90%, transparent 100%)",
-          maskImage:
-            "linear-gradient(to top, black 0%, black 25%, rgba(0,0,0,0.66) 62%, rgba(0,0,0,0.18) 90%, transparent 100%)",
-        }}
-        aria-hidden="true"
-      />
-      </motion.div>
-
-      <motion.div
-        className="absolute inset-x-0 top-0 bottom-0 z-20"
-        style={{ opacity: chromeOpacity }}
-      >
-      <div className="pointer-events-none absolute inset-x-8 top-8 grid grid-cols-[1fr_auto] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white md:grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)]">
-        <div className="font-semibold leading-relaxed">
-          <MarkPerezBrand variant="onDark" onActivate={unlockWorkScroll} />
-          <WorkSocialLinks links={socialButtons} toneSource={socialNavTone} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-6 px-8 pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] pt-3">
+          <button
+            type="button"
+            onClick={handleBackToHome}
+            className="pointer-events-auto text-[10px] font-semibold tracking-[0.15em] text-black/70"
+          >
+            BACK TO HOME
+          </button>
         </div>
-        <p className="font-neue hidden max-w-[520px] font-semibold leading-relaxed uppercase tracking-[0.08em] text-white md:block">
-          Full-stack Creative Specialist bridging high-end cinematography,
-          AI-driven art direction, social media strategy, and immersive web
-          architecture.
-        </p>
-        <p className="font-neue text-right font-semibold leading-relaxed">
-          DUBAI, UAE <span className="text-[#9F1F2E]">{"//"}</span>
-          <br />
-          MANILA, PHILIPPINES
-          <br />
-          <span className="font-normal text-white" suppressHydrationWarning>
-            {dubaiTime || "\u00a0"}
-          </span>
-        </p>
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 px-8 pb-7 pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] md:pb-8 md:pt-0">
-        <button
-          type="button"
-          onClick={handleBackToHome}
-          className="pointer-events-auto text-[10px] font-semibold tracking-[0.15em] text-white transition-colors hover:text-[#9F1F2E]"
-        >
-          BACK TO HOME
-        </button>
-        <div className="text-right">
-          <p className="font-editorial text-5xl leading-none tracking-[-0.02em] text-[#9F1F2E]">
-            works
-          </p>
-          <p className="font-neue mt-2 text-[10px] font-semibold tracking-[0.15em] text-white">
-            CLICK ON AN IMAGE
-          </p>
-        </div>
-      </div>
-      </motion.div>
-    </motion.section>
+      </motion.section>
+    </>
   );
 }
