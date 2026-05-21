@@ -5,6 +5,12 @@ import SectionInlineCopy from "@/components/SectionInlineCopy";
 import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
 import { workGalleryImages } from "@/constants/workGalleryImages";
+import {
+  desktopCurateHandoffWashOpacity,
+  desktopCuratePreviewHandoffBlurPx,
+  desktopCuratePreviewOpacity,
+  blurPxToFilter,
+} from "@/lib/desktopHomeTransitions";
 import { desktopCurateReplacementCells } from "@/lib/workColumnLayout";
 import {
   mobileBackgroundBlurFilter,
@@ -79,11 +85,33 @@ function ReplacementImage({
     [cell.start, cell.end],
     isMobile ? [0, 0.72] : [0, 0.6],
   );
-  const filter = useTransform(
-    scrollYProgress,
-    [cell.start, cell.end],
-    isMobile ? ["blur(22px)", "blur(0px)"] : ["blur(38px)", "blur(0px)"],
-  );
+  const filter = useTransform(scrollYProgress, (latest) => {
+    if (isMobile) {
+      const amount = Math.min(
+        Math.max((latest - cell.start) / (cell.end - cell.start), 0),
+        1,
+      );
+
+      const px = 22 * (1 - amount);
+
+      return blurPxToFilter(px);
+    }
+
+    const amount = Math.min(
+      Math.max((latest - cell.start) / (cell.end - cell.start), 0),
+      1,
+    );
+
+    if (amount <= 0.65) {
+      const local = amount / 0.65;
+
+      return blurPxToFilter(38 * (1 - local) + 12 * local);
+    }
+
+    const local = (amount - 0.65) / 0.35;
+
+    return blurPxToFilter(12 * (1 - local));
+  });
   const scale = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
@@ -381,34 +409,16 @@ export default function Curate({
     return px > 0 ? `blur(${px}px)` : "blur(0px)";
   });
   const mobileTextBlur = useTransform(scrollYProgress, () => "blur(0px)");
-  const desktopPreviewOpacity = useTransform(scrollYProgress, (progress) => {
-    let reveal = 0;
-
-    if (progress >= 0.42) {
-      reveal = 1;
-    } else if (progress >= 0.33) {
-      reveal = (progress - 0.33) / 0.09;
-    }
-
-    if (progress <= 0.58) {
-      return reveal;
-    }
-
-    if (progress >= 0.64) {
-      return 0;
-    }
-
-    return reveal * (1 - (progress - 0.58) / 0.06);
-  });
+  const desktopPreviewOpacity = useTransform(
+    scrollYProgress,
+    desktopCuratePreviewOpacity,
+  );
   const desktopHandoffWashOpacity = useTransform(
     scrollYProgress,
-    [0.5, 0.56, 0.58, 0.64, 0.68],
-    [0, 0.45, 0.85, 0.5, 0],
+    desktopCurateHandoffWashOpacity,
   );
-  const desktopPreviewHandoffBlur = useTransform(
-    scrollYProgress,
-    [0.5, 0.58, 0.62, 0.64],
-    ["blur(0px)", "blur(10px)", "blur(12px)", "blur(0px)"],
+  const desktopPreviewHandoffBlur = useTransform(scrollYProgress, (progress) =>
+    blurPxToFilter(desktopCuratePreviewHandoffBlurPx(progress)),
   );
 
   return (

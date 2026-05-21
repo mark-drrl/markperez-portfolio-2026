@@ -6,6 +6,16 @@ import Curate from "@/components/Curate";
 import Hero from "@/components/Hero";
 import Work from "@/components/work";
 import {
+  blurPxToFilter,
+  desktopCreateCurateGlassOpacity,
+  desktopCreateExitBlurPx,
+  desktopCurateEntranceBlurPx,
+  desktopWorkChromeOpacity,
+  desktopWorkGalleryHandoffBlurPx,
+  desktopWorkGalleryOpacity,
+  desktopWorkSectionPresence,
+} from "@/lib/desktopHomeTransitions";
+import {
   desktopConveyOpacity,
   desktopCreateOpacity,
   desktopCurateOpacity,
@@ -73,25 +83,26 @@ export default function HomeDesktopStack({
     [0, 0, 1, 1, 0, 0],
   );
   const createOpacity = useTransform(scrollYProgress, desktopCreateOpacity);
-  const createBlur = useTransform(
+  const createBlur = useTransform(scrollYProgress, (progress) => {
+    if (progress < 0.18) {
+      if (progress <= 0.14) {
+        return "blur(4px)";
+      }
+
+      const amount = (progress - 0.14) / 0.04;
+
+      return `blur(${(4 * (1 - amount)).toFixed(1)}px)`;
+    }
+
+    return blurPxToFilter(desktopCreateExitBlurPx(progress));
+  });
+  const createCurateGlassOpacity = useTransform(
     scrollYProgress,
-    [0, 0.14, 0.18, 0.48, 0.52, 0.56, 0.58, 1],
-    [
-      "blur(4px)",
-      "blur(4px)",
-      "blur(0px)",
-      "blur(0px)",
-      "blur(0px)",
-      "blur(6px)",
-      "blur(10px)",
-      "blur(10px)",
-    ],
+    desktopCreateCurateGlassOpacity,
   );
   const curateOpacity = useTransform(scrollYProgress, desktopCurateOpacity);
-  const curateBlur = useTransform(
-    scrollYProgress,
-    [0, 0.34, 0.42, 0.52, 0.58, 1],
-    ["blur(24px)", "blur(24px)", "blur(0px)", "blur(0px)", "blur(0px)", "blur(0px)"],
+  const curateBlur = useTransform(scrollYProgress, (progress) =>
+    blurPxToFilter(desktopCurateEntranceBlurPx(progress)),
   );
 
   const conveyPointerEvents = useTransform(
@@ -126,22 +137,14 @@ export default function HomeDesktopStack({
       latest > 0.34 ? "visible" : "hidden",
   );
 
-  const workOpacity = useTransform(scrollYProgress, (progress) => {
-    if (progress <= 0.58) {
-      return 0;
-    }
-
-    if (progress >= 0.64) {
-      return 1;
-    }
-
-    return (progress - 0.58) / 0.06;
-  });
-  /** Handoff blur on the gallery only — must clear by WORK_ENTER (locked progress never exceeds 0.64). */
-  const workGalleryHandoffBlur = useTransform(
+  const workSectionPresence = useTransform(
     scrollYProgress,
-    [0, 0.58, 0.62, 0.64, 1],
-    ["blur(0px)", "blur(18px)", "blur(8px)", "blur(0px)", "blur(0px)"],
+    desktopWorkSectionPresence,
+  );
+  const workGalleryOpacity = useTransform(scrollYProgress, desktopWorkGalleryOpacity);
+  const workChromeOpacity = useTransform(scrollYProgress, desktopWorkChromeOpacity);
+  const workGalleryHandoffBlur = useTransform(scrollYProgress, (progress) =>
+    blurPxToFilter(desktopWorkGalleryHandoffBlurPx(progress)),
   );
   const workPointerEvents = useTransform(scrollYProgress, (progress) =>
     progress >= WORK_ENTER_PROGRESS ? "auto" : "none",
@@ -189,6 +192,11 @@ export default function HomeDesktopStack({
           scrollYProgress={scrollYProgress}
         />
       </motion.div>
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-[35] h-screen w-full bg-[#EAEAEA]/28 backdrop-blur-[48px]"
+        style={{ opacity: createCurateGlassOpacity }}
+        aria-hidden="true"
+      />
       <motion.div className="pointer-events-none absolute inset-0 z-40 h-screen w-full">
         <Curate
           opacity={curateOpacity}
@@ -200,7 +208,9 @@ export default function HomeDesktopStack({
       </motion.div>
       <motion.div className="pointer-events-none absolute inset-0 z-[45] h-screen w-full">
         <Work
-          opacity={workOpacity}
+          sectionPresence={workSectionPresence}
+          galleryOpacity={workGalleryOpacity}
+          chromeOpacity={workChromeOpacity}
           galleryHandoffBlur={workGalleryHandoffBlur}
           pointerEvents={workPointerEvents}
           scrollYProgress={scrollYProgress}

@@ -106,6 +106,11 @@ export default function HomeMobileStack({ scrollYProgress }: HomeMobileStackProp
   const workPointerEvents = useTransform(scrollYProgress, (progress) =>
     progress >= MOBILE_WORK_SCROLL_PROGRESS - 0.02 ? "auto" : "none",
   );
+  const workSectionPresence = useTransform(scrollYProgress, (p): number =>
+    p >= MOBILE_WORK_SCROLL_PROGRESS - 0.02 ? 1 : 0,
+  );
+  const workGalleryOpacity = workOpacity;
+  const workChromeOpacity = workOpacity;
   const workGalleryHandoffBlur = useTransform(scrollYProgress, () => "blur(0px)");
 
   const heroVisibility = useTransform(
@@ -183,7 +188,9 @@ export default function HomeMobileStack({ scrollYProgress }: HomeMobileStackProp
         style={{ opacity: workOpacity }}
       >
         <Work
-          opacity={workOpacity}
+          sectionPresence={workSectionPresence}
+          galleryOpacity={workGalleryOpacity}
+          chromeOpacity={workChromeOpacity}
           galleryHandoffBlur={workGalleryHandoffBlur}
           pointerEvents={workPointerEvents}
           scrollYProgress={scrollYProgress}

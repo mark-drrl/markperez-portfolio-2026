@@ -97,7 +97,9 @@ function WorkImageLink({ src, children }: { src: string; children: ReactNode }) 
 const socialButtons = workPageSocialLinks;
 
 interface WorkProps {
-  opacity: MotionValue<number>;
+  sectionPresence: MotionValue<number>;
+  galleryOpacity: MotionValue<number>;
+  chromeOpacity: MotionValue<number>;
   galleryHandoffBlur: MotionValue<string>;
   pointerEvents: MotionValue<"none" | "auto">;
   scrollYProgress: MotionValue<number>;
@@ -211,7 +213,9 @@ function WorkMobileGallery({
 }
 
 export default function Work({
-  opacity,
+  sectionPresence,
+  galleryOpacity,
+  chromeOpacity,
   galleryHandoffBlur,
   pointerEvents,
   scrollYProgress,
@@ -321,13 +325,16 @@ export default function Work({
       ref={sectionRef}
       className="absolute inset-0 h-full w-full overflow-hidden bg-[#EAEAEA] text-black"
       style={{
-        opacity,
+        opacity: sectionPresence,
         pointerEvents,
       }}
     >
       <motion.div
-        className="absolute inset-0 h-full w-full overflow-hidden"
-        style={{ filter: galleryHandoffBlur }}
+        className="absolute inset-0 h-full w-full overflow-hidden will-change-[opacity,filter]"
+        style={{
+          opacity: galleryOpacity,
+          filter: galleryHandoffBlur,
+        }}
       >
         <WorkColumnGallery
           virtualScroll={virtualScroll}
@@ -341,7 +348,11 @@ export default function Work({
         />
       </motion.div>
 
-      <div className="pointer-events-none absolute inset-0 z-[8] bg-[#EAEAEA]/10" />
+      <motion.div
+        className="pointer-events-none absolute inset-0 z-[8]"
+        style={{ opacity: chromeOpacity }}
+      >
+        <div className="absolute inset-0 bg-[#EAEAEA]/10" />
       <div
         className="pointer-events-none absolute inset-x-0 top-0 z-[8] h-44"
         style={{
@@ -372,8 +383,13 @@ export default function Work({
         }}
         aria-hidden="true"
       />
+      </motion.div>
 
-      <div className="pointer-events-none absolute inset-x-8 top-8 z-20 grid grid-cols-[1fr_auto] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white md:grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)]">
+      <motion.div
+        className="absolute inset-x-0 top-0 bottom-0 z-20"
+        style={{ opacity: chromeOpacity }}
+      >
+      <div className="pointer-events-none absolute inset-x-8 top-8 grid grid-cols-[1fr_auto] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white md:grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)]">
         <div className="font-semibold leading-relaxed">
           <MarkPerezBrand variant="onDark" onActivate={unlockWorkScroll} />
           <WorkSocialLinks links={socialButtons} toneSource={socialNavTone} />
@@ -394,7 +410,7 @@ export default function Work({
         </p>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-6 px-8 pb-7 pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] md:pb-8 md:pt-0">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 px-8 pb-7 pt-3 max-md:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))] md:pb-8 md:pt-0">
         <button
           type="button"
           onClick={handleBackToHome}
@@ -411,6 +427,7 @@ export default function Work({
           </p>
         </div>
       </div>
+      </motion.div>
     </motion.section>
   );
 }

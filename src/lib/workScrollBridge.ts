@@ -1,3 +1,4 @@
+import { DESKTOP_CURATE_WORK_HANDOFF_START } from "@/lib/desktopHomeTransitions";
 import { getDefaultMobileVirtualOffset } from "@/lib/mobileWorkScroll";
 import type { MotionValue } from "framer-motion";
 import type Lenis from "lenis";
@@ -171,7 +172,10 @@ export function syncWorkScrollEngagement() {
 
   if (progress < 0.56) {
     workScrollBridge.handoffVirtualSynced = false;
-  } else if (progress >= 0.58 && !workScrollBridge.handoffVirtualSynced) {
+  } else if (
+    progress >= DESKTOP_CURATE_WORK_HANDOFF_START &&
+    !workScrollBridge.handoffVirtualSynced
+  ) {
     syncVirtualScrollValues(0);
     workScrollBridge.handoffVirtualSynced = true;
   }
