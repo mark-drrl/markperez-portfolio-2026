@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "optimize:curate-mobile": "node scripts/optimize-curate-mobile.mjs"
+    "optimize:curate-mobile": "node scripts/optimize-curate-mobile.mjs",
+    "debug:transitions": "tsx scripts/log-transition-opacity.ts",
+    "debug:curate-work": "node scripts/debug-curate-work-scroll.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",

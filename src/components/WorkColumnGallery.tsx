@@ -1,6 +1,7 @@
 "use client";
 
 import { workGalleryImages } from "@/constants/workGalleryImages";
+import { workGalleryProjectTitle } from "@/constants/workGalleryProjectTitles";
 import {
   computeColumnTranslateVh,
   workColumns,
@@ -59,9 +60,11 @@ function GalleryImage({
   src: string;
   linksEnabled: boolean;
 }) {
+  const title = workGalleryProjectTitle(src);
+
   return (
     <WorkImageLink src={src} linksEnabled={linksEnabled}>
-      <div className="group relative h-full w-full">
+      <div className="group relative h-full w-full overflow-hidden">
         <img
           src={src}
           alt=""
@@ -73,6 +76,13 @@ function GalleryImage({
           loading="lazy"
           decoding="async"
         />
+        {linksEnabled && title ? (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-start bg-black/0 p-6 transition-[background-color] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:bg-black/18 md:p-8">
+            <p className="font-editorial max-w-[78%] translate-y-3 text-left text-[clamp(1.15rem,2.2vw,1.85rem)] leading-[0.92] tracking-[0.04em] text-white opacity-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100">
+              {title}
+            </p>
+          </div>
+        ) : null}
       </div>
     </WorkImageLink>
   );

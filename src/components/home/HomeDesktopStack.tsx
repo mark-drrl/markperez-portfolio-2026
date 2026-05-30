@@ -9,10 +9,9 @@ import {
   blurPxToFilter,
   desktopCreateCurateGlassOpacity,
   desktopCreateExitBlurPx,
+  DESKTOP_CURATE_WORK_HANDOFF_START,
   desktopCurateEntranceBlurPx,
   desktopCurateLayerOpacity,
-  desktopCurateWorkHandoffGlassOpacity,
-  DESKTOP_CURATE_WORK_HANDOFF_START,
 } from "@/lib/desktopHomeTransitions";
 import {
   desktopConveyOpacity,
@@ -98,10 +97,6 @@ export default function HomeDesktopStack({
     scrollYProgress,
     desktopCreateCurateGlassOpacity,
   );
-  const curateWorkHandoffGlassOpacity = useTransform(
-    scrollYProgress,
-    desktopCurateWorkHandoffGlassOpacity,
-  );
   const curateOpacity = useTransform(scrollYProgress, desktopCurateLayerOpacity);
   const curateBlur = useTransform(scrollYProgress, (progress) =>
     blurPxToFilter(desktopCurateEntranceBlurPx(progress)),
@@ -120,7 +115,11 @@ export default function HomeDesktopStack({
   const curatePointerEvents = useTransform(
     scrollYProgress,
     (progress): CSSProperties["pointerEvents"] =>
-      progress >= 0.56 ? "none" : progress > 0.34 ? "auto" : "none",
+      progress >= DESKTOP_CURATE_WORK_HANDOFF_START
+        ? "none"
+        : progress > 0.34
+          ? "auto"
+          : "none",
   );
 
   const heroVisibility = useTransform(
@@ -201,11 +200,6 @@ export default function HomeDesktopStack({
           scrollYProgress={scrollYProgress}
         />
       </motion.div>
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[43] h-screen w-full bg-[#EAEAEA]/14 backdrop-blur-[44px] saturate-[1.05]"
-        style={{ opacity: curateWorkHandoffGlassOpacity }}
-        aria-hidden="true"
-      />
       <motion.div className="pointer-events-none absolute inset-0 z-[45] h-screen w-full">
         <Work scrollYProgress={scrollYProgress} pointerEvents={workPointerEvents} />
       </motion.div>

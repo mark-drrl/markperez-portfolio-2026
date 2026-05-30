@@ -308,6 +308,7 @@ export default function Convey({
           }
         >
           <SectionInlineCopy
+            layout={mobileLite ? "inline" : "stacked"}
             heading={
               <h2 className="whitespace-nowrap text-[clamp(1.35rem,5.2vw,3.25rem)] tracking-[-0.02em] md:text-7xl">
                 <span className="font-editorial italic font-light">

@@ -6,11 +6,19 @@ import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import {
-  desktopCuratePreviewLayerBlurPx,
+  curateFrostedImageFilter,
+  desktopCurateFrostGrainOpacity,
+  desktopCurateFrostBlurPx,
+  FROSTED_GRAIN_TEXTURE,
+} from "@/lib/curateFrostedBlur";
+import {
+  blurPxToFilter,
+  desktopCurateAmbienceOpacity,
+  desktopCurateGridShellOpacity,
   desktopCuratePreviewOpacity,
   desktopCurateSubtitleOpacity,
   desktopCurateTextOpacity,
-  blurPxToFilter,
+  desktopCurateWorkHandoffGlassOpacity,
 } from "@/lib/desktopHomeTransitions";
 import { desktopCurateReplacementCells } from "@/lib/workColumnLayout";
 import {
@@ -86,7 +94,30 @@ function ReplacementImage({
     [cell.start, cell.end],
     isMobile ? [0, 0.72] : [0, 1],
   );
-  const revealMid = cell.start + (cell.end - cell.start) * 0.72;
+  const shellOpacity = useTransform(scrollYProgress, (latest) => {
+    if (isMobile) {
+      return 1;
+    }
+
+    const grid = desktopCurateGridShellOpacity(latest);
+
+    if (grid <= 0) {
+      return 0;
+    }
+
+    const appearStart = cell.start - 0.03;
+    const appearEnd = cell.start + 0.012;
+
+    if (latest <= appearStart) {
+      return 0;
+    }
+
+    if (latest >= appearEnd) {
+      return grid;
+    }
+
+    return (grid * (latest - appearStart)) / (appearEnd - appearStart);
+  });
   const filter = useTransform(scrollYProgress, (latest) => {
     if (isMobile) {
       const amount = Math.min(
@@ -102,28 +133,24 @@ function ReplacementImage({
       1,
     );
 
-    let px = 0;
-
-    if (amount <= 0.72) {
-      const local = amount / 0.72;
-
-      px = 38 * (1 - local) + 10 * local;
-    } else {
-      const local = (amount - 0.72) / 0.28;
-
-      px = 10 * (1 - local);
+    return curateFrostedImageFilter(desktopCurateFrostBlurPx(latest));
+  });
+  const grainOpacity = useTransform(scrollYProgress, (latest) => {
+    if (isMobile) {
+      return 0;
     }
 
-    if (amount < 0.92) {
-      px = Math.max(px, 10);
-    }
+    const amount = Math.min(
+      Math.max((latest - cell.start) / (cell.end - cell.start), 0),
+      1,
+    );
 
-    return blurPxToFilter(px);
+    return desktopCurateFrostGrainOpacity(latest, amount);
   });
   const scale = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
-    isMobile ? [1.06, 1] : [1.08, 1.03],
+    isMobile ? [1.06, 1] : [1.14, 1.05],
   );
   const rippleMask = useTransform(scrollYProgress, (latest) => {
     if (isMobile || !cell.origin) {
@@ -147,7 +174,10 @@ function ReplacementImage({
   });
 
   return (
-    <div className={`absolute overflow-hidden bg-neutral-400/70 ${cell.className}`}>
+    <motion.div
+      className={`absolute overflow-hidden bg-neutral-400 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)] ${cell.className}`}
+      style={isMobile ? undefined : { opacity: shellOpacity }}
+    >
       <motion.div
         className="absolute inset-0"
         style={{
@@ -163,14 +193,29 @@ function ReplacementImage({
           alt=""
           loading={isMobile ? "lazy" : "eager"}
           decoding="async"
-          className="h-full w-full object-cover grayscale"
+          className="h-full w-full object-cover grayscale contrast-[1.02] brightness-[0.98] saturate-0"
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}
         />
       </motion.div>
-      <div className="pointer-events-none absolute inset-0 bg-neutral-300/20 md:bg-neutral-300/28" />
-    </div>
+      {!isMobile ? (
+        <motion.div
+          className="pointer-events-none absolute inset-[-2px] mix-blend-soft-light"
+          style={{
+            opacity: grainOpacity,
+            backgroundImage: FROSTED_GRAIN_TEXTURE,
+            backgroundSize: "200px 200px",
+          }}
+          aria-hidden
+        />
+      ) : (
+        <div className="pointer-events-none absolute inset-0 bg-neutral-300/20" />
+      )}
+      {!isMobile ? (
+        <div className="pointer-events-none absolute inset-0 bg-neutral-200/8" />
+      ) : null}
+    </motion.div>
   );
 }
 
@@ -290,19 +335,19 @@ export default function Curate({
   mobileLite = false,
 }: CurateProps) {
   const textOpacity = useTransform(scrollYProgress, desktopCurateTextOpacity);
-  const textBlur = useTransform(
-    scrollYProgress,
-    [0.6, 0.72],
-    ["blur(0px)", "blur(6px)"],
-  );
+  const textBlur = useTransform(scrollYProgress, () => "blur(0px)");
   const subtitleOpacity = useTransform(
     scrollYProgress,
     desktopCurateSubtitleOpacity,
   );
   const subtitleBlur = useTransform(
     scrollYProgress,
-    [0.39, 0.45, 0.6, 0.72],
-    ["blur(12px)", "blur(0px)", "blur(0px)", "blur(6px)"],
+    [0.39, 0.45],
+    ["blur(12px)", "blur(0px)"],
+  );
+  const desktopAmbienceOpacity = useTransform(
+    scrollYProgress,
+    desktopCurateAmbienceOpacity,
   );
   const mobileBrandOpacity = useTransform(scrollYProgress, (latest) => {
     if (!mobileLite) {
@@ -420,8 +465,9 @@ export default function Curate({
     scrollYProgress,
     desktopCuratePreviewOpacity,
   );
-  const desktopPreviewLayerBlur = useTransform(scrollYProgress, (progress) =>
-    blurPxToFilter(desktopCuratePreviewLayerBlurPx(progress)),
+  const desktopHandoffGlassOpacity = useTransform(
+    scrollYProgress,
+    desktopCurateWorkHandoffGlassOpacity,
   );
   return (
     <motion.section
@@ -434,24 +480,33 @@ export default function Curate({
       }}
     >
       {!mobileLite ? (
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden md:block"
-          style={{
-            opacity: desktopPreviewOpacity,
-            filter: desktopPreviewLayerBlur,
-          }}
-          aria-hidden="true"
-        >
-          {desktopCurateReplacementCells.map((cell) => (
-            <ReplacementImage
-              key={cell.className}
-              cell={cell}
-              index={cell.imageIndex}
-              scrollYProgress={scrollYProgress}
-              variant="desktop"
+        <>
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 hidden bg-[#EAEAEA]/10 md:block"
+            style={{ opacity: desktopAmbienceOpacity }}
+            aria-hidden="true"
+          />
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-[1] hidden overflow-hidden will-change-[filter,opacity] md:block"
+            style={{ opacity: desktopPreviewOpacity }}
+            aria-hidden="true"
+          >
+            {desktopCurateReplacementCells.map((cell) => (
+              <ReplacementImage
+                key={cell.className}
+                cell={cell}
+                index={cell.imageIndex}
+                scrollYProgress={scrollYProgress}
+                variant="desktop"
+              />
+            ))}
+            <motion.div
+              className="pointer-events-none absolute inset-0 bg-[#EAEAEA]/14 backdrop-blur-[12px]"
+              style={{ opacity: desktopHandoffGlassOpacity }}
+              aria-hidden
             />
-          ))}
-        </motion.div>
+          </motion.div>
+        </>
       ) : null}
       <motion.div
         className={`absolute inset-0 flex h-full w-full flex-col justify-between ${mobileLite ? "p-12" : "p-12"}`}
@@ -493,6 +548,8 @@ export default function Curate({
           }
         >
           <SectionInlineCopy
+            layout={mobileLite ? "inline" : "stacked"}
+            subtitleClassName={mobileLite ? "" : "text-white/92"}
             heading={
               <CurateHeading
                 scrollYProgress={scrollYProgress}

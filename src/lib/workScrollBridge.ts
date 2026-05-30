@@ -154,18 +154,9 @@ export function applyGalleryWheelDelta(
 
   const wheelImpulse = deltaY * WHEEL_TO_VIRTUAL;
 
-  if (wheelImpulse < 0 && workScrollBridge.targetVirtualScroll <= 0) {
-    workScrollBridge.targetVirtualScroll = 0;
-    workScrollBridge.virtualScrollVelocity = 0;
-    pinLenisToWorkAnchor();
-    return true;
-  }
-
   workScrollBridge.virtualScrollVelocity += wheelImpulse * VIRTUAL_SCROLL_VELOCITY_GAIN;
-  workScrollBridge.targetVirtualScroll = Math.max(
-    0,
-    workScrollBridge.targetVirtualScroll + wheelImpulse,
-  );
+  workScrollBridge.targetVirtualScroll =
+    workScrollBridge.targetVirtualScroll + wheelImpulse;
 
   pinLenisToWorkAnchor();
 
@@ -341,10 +332,9 @@ export function tickWorkVirtualScrollSmoothing(time: number) {
     Math.abs(workScrollBridge.virtualScrollVelocity) > 0.05
   ) {
     workScrollBridge.virtualScrollVelocity *= VIRTUAL_SCROLL_VELOCITY_DECAY;
-    workScrollBridge.targetVirtualScroll = Math.max(
-      0,
-      workScrollBridge.targetVirtualScroll + workScrollBridge.virtualScrollVelocity,
-    );
+    workScrollBridge.targetVirtualScroll =
+      workScrollBridge.targetVirtualScroll +
+      workScrollBridge.virtualScrollVelocity;
 
     if (Math.abs(workScrollBridge.virtualScrollVelocity) < 0.08) {
       workScrollBridge.virtualScrollVelocity = 0;

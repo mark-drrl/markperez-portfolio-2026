@@ -118,7 +118,7 @@ export const desktopCurateReplacementCells = [
     className:
       "left-[calc(((100%-1vh)/3)*2+1vh)] top-[calc(57.5vh+0.5vh)] h-[41.5vh] w-[calc((100%-1vh)/3)]",
     start: 0.51,
-    end: 0.6,
+    end: 0.58,
     origin: "36% 62%",
     columnIndex: 2,
     sampleVh: 68.25,

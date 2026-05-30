@@ -7,13 +7,13 @@ export const WORK_ENTER_PROGRESS = 0.64;
 /** Only leave Work scroll-lock when clearly back in Curate (not trackpad bounce). */
 export const WORK_UNLOCK_PROGRESS = 0.58;
 export const WORK_EXIT_PROGRESS = WORK_UNLOCK_PROGRESS;
-export const WORK_HANDOFF_START = 0.56;
+export const WORK_HANDOFF_START = 0.59;
 
 /** Gallery offset at Curate → Work handoff (column translate anchor). */
 export const DESKTOP_GALLERY_HANDOFF_OFFSET = 0;
 
 /** Pause gallery wheel after Work entry so the handoff can be read. */
-export const GALLERY_SCROLL_ENABLE_DELAY_MS = 900;
+export const GALLERY_SCROLL_ENABLE_DELAY_MS = 650;
 
 /** Wheel → target virtual pixels (lower = heavier, more deliberate). */
 export const WHEEL_TO_VIRTUAL = 0.42;

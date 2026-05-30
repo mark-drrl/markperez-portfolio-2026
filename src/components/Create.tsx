@@ -452,6 +452,7 @@ export default function Create({
           style={{ opacity: mobileLite ? mobileTextOpacity : 1 }}
         >
           <SectionInlineCopy
+            layout={mobileLite ? "inline" : "stacked"}
             heading={
               <CreateHeading
                 progress={scrollYProgress}

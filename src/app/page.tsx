@@ -22,6 +22,15 @@ import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
 import Lenis from "lenis";
 import { restoreNativeDocumentScroll } from "@/lib/restoreDocumentScroll";
 import {
+  desktopCreateCurateGlassOpacity,
+  desktopCurateHandoffWashOpacity,
+  desktopCurateLayerOpacity,
+  desktopCuratePreviewOpacity,
+  desktopGalleryVisualCoverage,
+  desktopWorkChromeOpacity,
+  desktopWorkGalleryOpacity,
+} from "@/lib/desktopHomeTransitions";
+import {
   handleWorkLenisVirtualScroll,
   isWorkGalleryScrollActive,
   syncWorkScrollEngagement,
@@ -258,6 +267,7 @@ export default function Home() {
         window as Window & {
           __portfolioScrollDebug?: {
             getState: () => Record<string, unknown>;
+            getTransitionAt: (progress: number) => Record<string, number>;
             scrollToProgress: (progress: number) => number;
           };
         }
@@ -272,6 +282,16 @@ export default function Home() {
             handoffPrepared: workScrollBridge.handoffPrepared,
             lenisScroll: workScrollBridge.lenis?.scroll ?? null,
           },
+        }),
+        getTransitionAt: (progress: number) => ({
+          progress,
+          curateLayer: desktopCurateLayerOpacity(progress),
+          curatePreview: desktopCuratePreviewOpacity(progress),
+          handoffWash: desktopCurateHandoffWashOpacity(progress),
+          createCurateGlass: desktopCreateCurateGlassOpacity(progress),
+          workGallery: desktopWorkGalleryOpacity(progress),
+          workChrome: desktopWorkChromeOpacity(progress),
+          visualCoverage: desktopGalleryVisualCoverage(progress),
         }),
         scrollToProgress: (progress: number) =>
           scrollHomeToProgress(progress, containerRef.current),
