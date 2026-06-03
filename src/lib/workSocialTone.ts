@@ -8,10 +8,10 @@ import { luminanceToNavTone } from "@/lib/sectionNavTone";
 
 /** Approximate perceived luminance after grayscale + contrast (0 = dark, 1 = light). */
 const WORK_IMAGE_LUMINANCE: Record<number, number> = {
-  0: 0.54,
+  0: 0.46,
   1: 0.7,
-  2: 0.46,
-  3: 0.58,
+  2: 0.58,
+  3: 0.54,
   4: 0.5,
   5: 0.42,
   6: 0.56,
