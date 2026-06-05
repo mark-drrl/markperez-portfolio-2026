@@ -12,10 +12,9 @@ import {
   HOME_WORK_SCROLL_PROGRESS,
   dispatchHomeScrollSync,
   getHomeScrollProgress,
-  getWorkLandingScrollProgress,
-  prepareHomeScrollToWorks,
   scrollHomeToProgress,
   scrollHomeToTop,
+  scrollHomeToWorksGallery,
   shouldLandOnWorkGallery,
 } from "@/lib/homeScroll";
 import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
@@ -132,11 +131,7 @@ export default function Home() {
     const main = containerRef.current;
 
     if (shouldLandOnWorkGallery()) {
-      prepareHomeScrollToWorks();
-      const progress = scrollHomeToProgress(
-        getWorkLandingScrollProgress(),
-        main,
-      );
+      const progress = scrollHomeToWorksGallery(main);
       syncHomeScrollFromProgress(progress);
       dispatchHomeScrollSync();
       return;
@@ -155,10 +150,7 @@ export default function Home() {
       const main = containerRef.current;
 
       if (shouldLandOnWorkGallery()) {
-        prepareHomeScrollToWorks();
-        syncHomeScrollFromProgress(
-          scrollHomeToProgress(getWorkLandingScrollProgress(), main),
-        );
+        syncHomeScrollFromProgress(scrollHomeToWorksGallery(main));
         dispatchHomeScrollSync();
         return;
       }
@@ -244,6 +236,11 @@ export default function Home() {
     let animationFrameId = 0;
 
     workScrollBridge.lenis = lenis;
+
+    if (shouldLandOnWorkGallery()) {
+      scrollHomeToWorksGallery(containerRef.current);
+      syncHomeScrollFromProgress(getHomeScrollProgress(containerRef.current));
+    }
 
     function raf(time: number) {
       lenis.raf(time);

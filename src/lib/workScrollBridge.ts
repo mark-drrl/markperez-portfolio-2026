@@ -45,6 +45,8 @@ export const workScrollBridge = {
   virtualScrollVelocity: 0,
   /** `performance.now()` timestamp when gallery wheel input is allowed. */
   galleryScrollEnabledAt: 0,
+  /** Set when returning from a project page — engage lock once Lenis is ready. */
+  pendingWorkGalleryLanding: false,
 };
 
 export function isWorkGalleryScrollActive() {
@@ -237,11 +239,25 @@ export function resetWorkVirtualScroll() {
   );
 }
 
+/** Lock at Work anchor after `/#works` return (gallery scroll, not Curate handoff). */
+export function engageWorkGalleryLanding() {
+  workScrollBridge.blockWorkEngagement = false;
+  workScrollBridge.handoffPrepared = true;
+  workScrollBridge.pendingWorkGalleryLanding = true;
+  workScrollBridge.virtualScrollVelocity = 0;
+
+  if (workScrollBridge.lenis) {
+    engageWorkScroll();
+    workScrollBridge.pendingWorkGalleryLanding = false;
+  }
+}
+
 export function resetHomeScrollPosition() {
   unlockWorkScroll();
   resetWorkVirtualScroll();
   workScrollBridge.blockWorkEngagement = true;
   workScrollBridge.handoffPrepared = false;
+  workScrollBridge.pendingWorkGalleryLanding = false;
 
   const lenis = workScrollBridge.lenis;
 
@@ -258,6 +274,15 @@ export function resetHomeScrollPosition() {
 export function syncWorkScrollEngagement() {
   if (!isDesktopViewport()) {
     return;
+  }
+
+  if (
+    workScrollBridge.pendingWorkGalleryLanding &&
+    workScrollBridge.lenis &&
+    !workScrollBridge.isLocked
+  ) {
+    engageWorkScroll();
+    workScrollBridge.pendingWorkGalleryLanding = false;
   }
 
   const progress = getEffectiveScrollProgress();

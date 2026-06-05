@@ -25,6 +25,7 @@ function teardownHomeScroll() {
   workScrollBridge.targetVirtualScroll = 0;
   workScrollBridge.displayVirtualScroll = 0;
   workScrollBridge.blockWorkEngagement = false;
+  workScrollBridge.pendingWorkGalleryLanding = false;
   restoreNativeDocumentScroll();
 }
 

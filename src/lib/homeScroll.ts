@@ -1,5 +1,6 @@
 import { MOBILE_WORK_SCROLL_FULL } from "@/lib/mobileHomeOpacity";
 import {
+  engageWorkGalleryLanding,
   resetHomeScrollPosition,
   resetWorkVirtualScroll,
   workScrollBridge,
@@ -153,4 +154,15 @@ export function prepareHomeScrollToWorks() {
       `${window.location.pathname}${window.location.search}#works`,
     );
   }
+}
+
+/** Return from a project page — land on Work gallery with scroll locked. */
+export function scrollHomeToWorksGallery(container?: HTMLElement | null) {
+  prepareHomeScrollToWorks();
+  const progress = scrollHomeToProgress(
+    getWorkLandingScrollProgress(),
+    container,
+  );
+  engageWorkGalleryLanding();
+  return progress;
 }
