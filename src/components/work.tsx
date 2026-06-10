@@ -2,6 +2,7 @@
 
 import DesktopWorkView from "@/components/work/DesktopWorkView";
 import { workGalleryImages } from "@/constants/workGalleryImages";
+import { getWorkGalleryHref } from "@/constants/workGalleryLinks";
 import { GalleryImage } from "@/components/GalleryMedia";
 import {
   getCenteredWorkGalleryIndex,
@@ -46,17 +47,7 @@ const mobileWorkLoopItems = Array.from(
 ).flat();
 
 function getWorkHref(src: string) {
-  if (src === "/work/portfolio-1.jpg") return "/works-centurionv1";
-  if (src === "/work/portfolio-2.png") return "/works-lifestyle";
-  if (src === "/work/portfolio-3.jpg") return "/works-soren";
-  if (src === "/work/portfolio-4.jpg") return "/works-lsb";
-  if (src === "/work/portfolio-5.jpg") return "/works-wakedubai";
-  if (src === "/work/portfolio-6.jpg") return "/works-nautique";
-  if (src === "/work/portfolio-7.jpg") return "/works-interior";
-  if (src === "/work/portfolio-8.jpg") return "/works-atm";
-  if (src === "/work/portfolio-9.jpg") return "/works-phase5page";
-  if (src === "/work/portfolio-10.jpg") return "/works-supreme";
-  return null;
+  return getWorkGalleryHref(src);
 }
 
 function WorkImageLink({ src, children }: { src: string; children: ReactNode }) {

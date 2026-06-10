@@ -32,7 +32,11 @@ export function GalleryImage({
     <motion.img
       src={src}
       alt={alt}
-      className={`h-full w-full ${className}`}
+      className={
+        className.includes("h-auto")
+          ? className
+          : `h-full w-full ${className}`
+      }
       animate={{ filter: isFocused ? focusedFilter : idleFilter }}
       transition={freezeTransitions ? { duration: 0 } : colorTransition}
       loading={loading}

@@ -47,7 +47,8 @@ export const workColumns = [
     initialY: 0,
     tiles: [
       { height: 57.5, image: 5 },
-      { height: 41.5, image: 6 },
+      { height: 41.5, image: 10 },
+      { height: 57.5, image: 6 },
       { height: 57.5, image: 8 },
     ],
   },

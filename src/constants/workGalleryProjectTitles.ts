@@ -1,3 +1,5 @@
+import { WORK_CREED_TILE_SRC } from "@/constants/workGalleryLinks";
+
 /** Hover titles for desktop Work gallery tiles (matches project pages). */
 export const workGalleryProjectTitles: Record<string, string> = {
   "/work/portfolio-1.jpg": "Centurion Boats",
@@ -10,6 +12,7 @@ export const workGalleryProjectTitles: Record<string, string> = {
   "/work/portfolio-8.jpg": "Arabian Travel Market",
   "/work/portfolio-9.jpg": "Phase 5 Wakesurfing",
   "/work/portfolio-10.jpg": "Supreme Boats",
+  [WORK_CREED_TILE_SRC]: "Creed",
 };
 
 export function workGalleryProjectTitle(src: string) {

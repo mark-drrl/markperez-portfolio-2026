@@ -13,11 +13,12 @@ const WORK_IMAGE_LUMINANCE: Record<number, number> = {
   2: 0.58,
   3: 0.54,
   4: 0.5,
-  5: 0.42,
+  5: 0.48,
   6: 0.56,
   7: 0.48,
   8: 0.64,
   9: 0.52,
+  10: 0.42,
 };
 
 const HEADER_SAMPLE_VH = 14;

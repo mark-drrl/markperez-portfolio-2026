@@ -99,24 +99,7 @@ function ReplacementImage({
       return 1;
     }
 
-    const grid = desktopCurateGridShellOpacity(latest);
-
-    if (grid <= 0) {
-      return 0;
-    }
-
-    const appearStart = cell.start - 0.03;
-    const appearEnd = cell.start + 0.012;
-
-    if (latest <= appearStart) {
-      return 0;
-    }
-
-    if (latest >= appearEnd) {
-      return grid;
-    }
-
-    return (grid * (latest - appearStart)) / (appearEnd - appearStart);
+    return desktopCurateGridShellOpacity(latest);
   });
   const filter = useTransform(scrollYProgress, (latest) => {
     if (isMobile) {
@@ -127,11 +110,6 @@ function ReplacementImage({
 
       return blurPxToFilter(22 * (1 - amount));
     }
-
-    const amount = Math.min(
-      Math.max((latest - cell.start) / (cell.end - cell.start), 0),
-      1,
-    );
 
     return curateFrostedImageFilter(desktopCurateFrostBlurPx(latest));
   });
@@ -175,11 +153,11 @@ function ReplacementImage({
 
   return (
     <motion.div
-      className={`absolute overflow-hidden bg-neutral-400 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)] ${cell.className}`}
+      className={`absolute overflow-hidden bg-neutral-300 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-1 ring-inset ring-black/[0.06] ${cell.className}`}
       style={isMobile ? undefined : { opacity: shellOpacity }}
     >
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-[1px] overflow-hidden"
         style={{
           opacity,
           scale,

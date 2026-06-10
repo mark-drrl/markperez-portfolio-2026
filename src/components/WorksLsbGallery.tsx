@@ -8,6 +8,10 @@ import {
   galleryScrollerClassName,
   useGalleryScroll,
 } from "@/hooks/useGalleryScroll";
+import {
+  galleryNaturalImageClassName,
+  normalizeGalleryItemClass,
+} from "@/lib/galleryItemClass";
 
 interface GalleryItem {
   type: "image" | "video";
@@ -56,13 +60,6 @@ export default function WorksLsbGallery({
   useGalleryScroll(scrollerRef, setFocusedIndex, activeTab);
 
   useEffect(() => {
-    const scroller = scrollerRef.current;
-
-    if (!scroller) {
-      return;
-    }
-
-    scroller.scrollTop = 0;
     setFocusedIndex(0);
   }, [activeTab]);
 
@@ -176,17 +173,22 @@ export default function WorksLsbGallery({
 
       <div ref={scrollerRef} className={galleryScrollerClassName}>
         <div
-          className={`flex flex-col items-center ${
-            activeTab === "reels" ? "gap-4" : "gap-6"
-          }`}
+          data-gallery-track
+          className={`flex flex-col items-center ${activeTab === "reels" ? "gap-4" : "gap-3"}`}
         >
-          {items.map((item, index) => (
+          {items.map((item, index) => {
+            const isAspectTile = item.type === "video";
+            const itemClassName = isAspectTile
+              ? item.className
+              : normalizeGalleryItemClass(item.className, index, items.length);
+
+            return (
             <div
               key={`${activeTab}-${item.src}`}
               data-gallery-item
               data-gallery-index={index}
               data-cursor-interactive="true"
-              className={`${galleryItemClassName} ${item.className}`}
+              className={`${galleryItemClassName} ${isAspectTile ? "" : "h-fit"} ${itemClassName}`}
               onClick={() =>
                 setLightboxItem({
                   type: item.type,
@@ -251,10 +253,12 @@ export default function WorksLsbGallery({
                   alt={`LSB Yacht Charter gallery image ${index + 1}`}
                   isFocused={focusedIndex === index}
                   loading={index < 2 ? "eager" : "lazy"}
+                  className={galleryNaturalImageClassName}
                 />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <ProjectMediaLightbox

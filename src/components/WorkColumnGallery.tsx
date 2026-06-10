@@ -1,6 +1,7 @@
 "use client";
 
 import { workGalleryImages } from "@/constants/workGalleryImages";
+import { getWorkGalleryHref } from "@/constants/workGalleryLinks";
 import { workGalleryProjectTitle } from "@/constants/workGalleryProjectTitles";
 import {
   computeColumnTranslateVh,
@@ -12,19 +13,12 @@ import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
 const workImages = workGalleryImages;
 
-function getWorkHref(src: string) {
-  if (src === "/work/portfolio-1.jpg") return "/works-centurionv1";
-  if (src === "/work/portfolio-2.png") return "/works-lifestyle";
-  if (src === "/work/portfolio-3.jpg") return "/works-soren";
-  if (src === "/work/portfolio-4.jpg") return "/works-lsb";
-  if (src === "/work/portfolio-5.jpg") return "/works-wakedubai";
-  if (src === "/work/portfolio-6.jpg") return "/works-nautique";
-  if (src === "/work/portfolio-7.jpg") return "/works-interior";
-  if (src === "/work/portfolio-8.jpg") return "/works-atm";
-  if (src === "/work/portfolio-9.jpg") return "/works-phase5page";
-  if (src === "/work/portfolio-10.jpg") return "/works-supreme";
-  return null;
-}
+const galleryImageClass = (linksEnabled: boolean) =>
+  `h-full w-full object-cover grayscale transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
+    linksEnabled
+      ? "contrast-125 brightness-[0.96] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
+      : ""
+  }`;
 
 function WorkImageLink({
   src,
@@ -35,7 +29,7 @@ function WorkImageLink({
   children: ReactNode;
   linksEnabled: boolean;
 }) {
-  const href = getWorkHref(src);
+  const href = getWorkGalleryHref(src);
 
   if (linksEnabled && href) {
     return (
@@ -53,6 +47,26 @@ function WorkImageLink({
   return <div className="h-full w-full">{children}</div>;
 }
 
+function GalleryHoverTitle({
+  title,
+  linksEnabled,
+}: {
+  title: string;
+  linksEnabled: boolean;
+}) {
+  if (!linksEnabled) {
+    return null;
+  }
+
+  return (
+    <div className="pointer-events-none absolute inset-0 flex items-center justify-start bg-black/0 p-6 transition-[background-color] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:bg-black/18 md:p-8">
+      <p className="font-editorial max-w-[78%] translate-y-3 text-left text-[clamp(1.15rem,2.2vw,1.85rem)] leading-[0.92] tracking-[0.04em] text-white opacity-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100">
+        {title}
+      </p>
+    </div>
+  );
+}
+
 function GalleryImage({
   src,
   linksEnabled,
@@ -68,20 +82,12 @@ function GalleryImage({
         <img
           src={src}
           alt=""
-          className={`h-full w-full object-cover grayscale transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
-            linksEnabled
-              ? "contrast-125 brightness-[0.96] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
-              : ""
-          }`}
+          className={galleryImageClass(linksEnabled)}
           loading="lazy"
           decoding="async"
         />
-        {linksEnabled && title ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-start bg-black/0 p-6 transition-[background-color] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:bg-black/18 md:p-8">
-            <p className="font-editorial max-w-[78%] translate-y-3 text-left text-[clamp(1.15rem,2.2vw,1.85rem)] leading-[0.92] tracking-[0.04em] text-white opacity-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100">
-              {title}
-            </p>
-          </div>
+        {title ? (
+          <GalleryHoverTitle title={title} linksEnabled={linksEnabled} />
         ) : null}
       </div>
     </WorkImageLink>

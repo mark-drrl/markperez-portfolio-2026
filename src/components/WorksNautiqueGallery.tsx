@@ -5,8 +5,15 @@ import ProjectMediaLightbox from "@/components/ProjectMediaLightbox";
 import { GalleryImage, GalleryVideo } from "@/components/GalleryMedia";
 import {
   galleryItemClassName,
+  galleryScrollerClassName,
+  galleryTrackClassName,
   useGalleryScroll,
 } from "@/hooks/useGalleryScroll";
+import {
+  galleryNaturalImageClassName,
+  isGalleryAspectItem,
+  normalizeGalleryItemClass,
+} from "@/lib/galleryItemClass";
 
 interface GalleryItem {
   type: "image" | "video";
@@ -133,18 +140,22 @@ export default function WorksNautiqueGallery({ items }: WorksNautiqueGalleryProp
 
   return (
     <div className="relative h-full">
-      <div
-        ref={scrollerRef}
-        className="h-full overflow-y-auto overscroll-contain px-1 pb-[50vh] pt-[20vh] max-md:snap-y max-md:snap-mandatory"
-      >
-        <div className="flex flex-col items-center gap-5">
-          {items.map((item, index) => (
+      <div ref={scrollerRef} className={galleryScrollerClassName}>
+        <div data-gallery-track className={galleryTrackClassName}>
+          {items.map((item, index) => {
+            const isAspectTile =
+              item.type === "video" || isGalleryAspectItem(item.className);
+            const itemClassName = isAspectTile
+              ? item.className
+              : normalizeGalleryItemClass(item.className, index, items.length);
+
+            return (
             <div
               key={`${item.type}-${item.src}`}
               data-gallery-item
               data-gallery-index={index}
               data-cursor-interactive="true"
-              className={`${galleryItemClassName} ${item.className}`}
+              className={`${galleryItemClassName} ${isAspectTile ? "" : "h-fit"} ${itemClassName}`}
               onClick={() =>
                 setLightboxItem({
                   type: item.type,
@@ -191,10 +202,12 @@ export default function WorksNautiqueGallery({ items }: WorksNautiqueGalleryProp
                   alt={`Nautique gallery image ${index + 1}`}
                   isFocused={focusedIndex === index}
                   loading={index < 2 ? "eager" : "lazy"}
+                  className={galleryNaturalImageClassName}
                 />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
       <ProjectMediaLightbox
