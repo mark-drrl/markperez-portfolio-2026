@@ -55,11 +55,28 @@ export const workColumns = [
 ] as const satisfies readonly WorkColumnDefinition[];
 
 /** Desktop Curate preview cells — same positions as Work tiles at virtual offset 0. */
+// Varied grey tones for the grid shells, shared by the Create boxes and the
+// Curate fill shells (index-aligned). Matching tones make the boxes look like
+// they persist across the Create→Curate handoff and then get filled.
+export const curateCellShellTones = [
+  "#dbdbdb",
+  "#b7b7b7",
+  "#cfcfcf",
+  "#aaaaaa",
+  "#d6d6d6",
+  "#b1b1b1",
+  "#c5c5c5",
+] as const;
+
+// Boxes fill slowly in a shuffled order (not all at once). Each `start`/`end`
+// is hand-spread across the Curate window so the grid populates one box at a
+// time in a random-looking sequence: cell2 → cell5 → cell0 → cell6 → cell3 →
+// cell1 → cell4.
 export const desktopCurateReplacementCells = [
   {
     className: "left-0 top-0 h-[60.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.33,
-    end: 0.42,
+    start: 0.407,
+    end: 0.45,
     origin: "42% 58%",
     columnIndex: 0,
     sampleVh: 30.25,
@@ -68,8 +85,8 @@ export const desktopCurateReplacementCells = [
   {
     className:
       "left-0 top-[calc(60.5vh+0.5vh)] h-[60.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.36,
-    end: 0.45,
+    start: 0.469,
+    end: 0.512,
     origin: "58% 72%",
     columnIndex: 0,
     sampleVh: 91.25,
@@ -78,8 +95,8 @@ export const desktopCurateReplacementCells = [
   {
     className:
       "left-[calc((100%-1vh)/3+0.5vh)] top-[13vh] h-[60.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.39,
-    end: 0.48,
+    start: 0.365,
+    end: 0.408,
     origin: "46% 48%",
     columnIndex: 1,
     sampleVh: 43.25,
@@ -88,8 +105,8 @@ export const desktopCurateReplacementCells = [
   {
     className:
       "left-[calc((100%-1vh)/3+0.5vh)] -top-[48vh] h-[60.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.42,
-    end: 0.51,
+    start: 0.448,
+    end: 0.491,
     origin: "64% 34%",
     columnIndex: 1,
     sampleVh: -17.75,
@@ -98,8 +115,8 @@ export const desktopCurateReplacementCells = [
   {
     className:
       "left-[calc((100%-1vh)/3+0.5vh)] top-[74vh] h-[60.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.45,
-    end: 0.54,
+    start: 0.49,
+    end: 0.535,
     origin: "38% 68%",
     columnIndex: 1,
     sampleVh: 89,
@@ -108,8 +125,8 @@ export const desktopCurateReplacementCells = [
   {
     className:
       "left-[calc(((100%-1vh)/3)*2+1vh)] top-0 h-[57.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.48,
-    end: 0.57,
+    start: 0.386,
+    end: 0.429,
     origin: "52% 54%",
     columnIndex: 2,
     sampleVh: 28.75,
@@ -118,8 +135,8 @@ export const desktopCurateReplacementCells = [
   {
     className:
       "left-[calc(((100%-1vh)/3)*2+1vh)] top-[calc(57.5vh+0.5vh)] h-[41.5vh] w-[calc((100%-1vh)/3)]",
-    start: 0.51,
-    end: 0.58,
+    start: 0.427,
+    end: 0.47,
     origin: "36% 62%",
     columnIndex: 2,
     sampleVh: 68.25,

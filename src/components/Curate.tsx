@@ -6,11 +6,10 @@ import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import {
-  curateFrostedImageFilter,
   desktopCurateFrostGrainOpacity,
-  desktopCurateFrostBlurPx,
   FROSTED_GRAIN_TEXTURE,
 } from "@/lib/curateFrostedBlur";
+import { figmaCurateTransitionBlurStyle } from "@/lib/figmaBlurStyles";
 import {
   blurPxToFilter,
   desktopCurateAmbienceOpacity,
@@ -18,9 +17,13 @@ import {
   desktopCuratePreviewOpacity,
   desktopCurateSubtitleOpacity,
   desktopCurateTextOpacity,
-  desktopCurateWorkHandoffGlassOpacity,
+  DESKTOP_CURATE_WORK_HANDOFF_END,
+  DESKTOP_CURATE_WORK_HANDOFF_START,
 } from "@/lib/desktopHomeTransitions";
-import { desktopCurateReplacementCells } from "@/lib/workColumnLayout";
+import {
+  curateCellShellTones,
+  desktopCurateReplacementCells,
+} from "@/lib/workColumnLayout";
 import {
   mobileBackgroundBlurFilter,
   mobileCurateBlur,
@@ -78,6 +81,7 @@ interface ReplacementImageProps {
   scrollYProgress: MotionValue<number>;
   variant: "desktop" | "mobile";
   mobileLite?: boolean;
+  tone?: string;
 }
 
 function ReplacementImage({
@@ -86,6 +90,7 @@ function ReplacementImage({
   scrollYProgress,
   variant,
   mobileLite = false,
+  tone,
 }: ReplacementImageProps) {
   const isMobile = variant === "mobile";
   const src = workGalleryImages[index];
@@ -111,7 +116,7 @@ function ReplacementImage({
       return blurPxToFilter(22 * (1 - amount));
     }
 
-    return curateFrostedImageFilter(desktopCurateFrostBlurPx(latest));
+    return "blur(0px)";
   });
   const grainOpacity = useTransform(scrollYProgress, (latest) => {
     if (isMobile) {
@@ -153,8 +158,12 @@ function ReplacementImage({
 
   return (
     <motion.div
-      className={`absolute overflow-hidden bg-neutral-300 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-1 ring-inset ring-black/[0.06] ${cell.className}`}
-      style={isMobile ? undefined : { opacity: shellOpacity }}
+      className={`absolute overflow-hidden shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] ring-1 ring-inset ring-black/[0.06] ${isMobile ? "bg-neutral-300" : ""} ${cell.className}`}
+      style={
+        isMobile
+          ? undefined
+          : { opacity: shellOpacity, backgroundColor: tone ?? "#c1c1c1" }
+      }
     >
       <motion.div
         className="absolute inset-[1px] overflow-hidden"
@@ -443,10 +452,32 @@ export default function Curate({
     scrollYProgress,
     desktopCuratePreviewOpacity,
   );
-  const desktopHandoffGlassOpacity = useTransform(
-    scrollYProgress,
-    desktopCurateWorkHandoffGlassOpacity,
-  );
+  const desktopBlurOverlayOpacity = useTransform(scrollYProgress, (latest) => {
+    // Frosted background is present throughout Curate: it ramps in with the
+    // grey boxes, holds at full strength while the images fill in one by one,
+    // then fades out as the Work gallery takes over.
+    if (latest < 0.34) {
+      return 0;
+    }
+
+    if (latest < 0.4) {
+      return (latest - 0.34) / 0.06;
+    }
+
+    if (latest < DESKTOP_CURATE_WORK_HANDOFF_START) {
+      return 1;
+    }
+
+    if (latest >= DESKTOP_CURATE_WORK_HANDOFF_END) {
+      return 0;
+    }
+
+    return (
+      1 -
+      (latest - DESKTOP_CURATE_WORK_HANDOFF_START) /
+        (DESKTOP_CURATE_WORK_HANDOFF_END - DESKTOP_CURATE_WORK_HANDOFF_START)
+    );
+  });
   return (
     <motion.section
       className={`absolute inset-0 flex h-full w-full flex-col justify-between bg-[#EAEAEA] text-black pointer-events-none ${mobileLite ? "overflow-x-visible overflow-y-hidden p-12" : "overflow-hidden"}`}
@@ -465,25 +496,29 @@ export default function Curate({
             aria-hidden="true"
           />
           <motion.div
-            className="pointer-events-none absolute inset-0 z-[1] hidden overflow-hidden will-change-[filter,opacity] md:block"
+            className="pointer-events-none absolute inset-0 z-[1] hidden overflow-hidden md:block"
             style={{ opacity: desktopPreviewOpacity }}
             aria-hidden="true"
           >
-            {desktopCurateReplacementCells.map((cell) => (
+            {desktopCurateReplacementCells.map((cell, index) => (
               <ReplacementImage
                 key={cell.className}
                 cell={cell}
                 index={cell.imageIndex}
                 scrollYProgress={scrollYProgress}
                 variant="desktop"
+                tone={curateCellShellTones[index]}
               />
             ))}
-            <motion.div
-              className="pointer-events-none absolute inset-0 bg-[#EAEAEA]/14 backdrop-blur-[12px]"
-              style={{ opacity: desktopHandoffGlassOpacity }}
-              aria-hidden
-            />
           </motion.div>
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-[2] hidden mix-blend-soft-light md:block"
+            style={{
+              opacity: desktopBlurOverlayOpacity,
+              ...figmaCurateTransitionBlurStyle,
+            }}
+            aria-hidden
+          />
         </>
       ) : null}
       <motion.div

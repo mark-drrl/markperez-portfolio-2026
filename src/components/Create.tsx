@@ -10,6 +10,7 @@ import MarkPerezBrand from "@/components/MarkPerezBrand";
 import SectionInlineCopy from "@/components/SectionInlineCopy";
 import SectionNavLinks from "@/components/SectionNavLinks";
 import { cellRevealTone } from "@/lib/sectionNavTone";
+import { curateCellShellTones } from "@/lib/workColumnLayout";
 import {
   mobileBackgroundBlurFilter,
   mobileCreateBlur,
@@ -167,9 +168,10 @@ interface GridCellProps {
   cell: CreateGridCell;
   progress: MotionValue<number>;
   mobileLite?: boolean;
+  tone?: string;
 }
 
-function GridCell({ cell, progress, mobileLite = false }: GridCellProps) {
+function GridCell({ cell, progress, mobileLite = false, tone }: GridCellProps) {
   const opacity = useTransform(
     progress,
     mobileLite
@@ -210,10 +212,11 @@ function GridCell({ cell, progress, mobileLite = false }: GridCellProps) {
 
   return (
     <motion.div
-      className={`absolute overflow-hidden ${mobileLite ? "bg-neutral-400/35" : "bg-neutral-400/70"} ${cell.className}`}
+      className={`absolute overflow-hidden ${mobileLite ? "bg-neutral-400/35" : ""} ${cell.className}`}
       style={{
         opacity,
         filter,
+        ...(mobileLite ? {} : { backgroundColor: tone ?? "#c1c1c1" }),
         WebkitMaskImage: rippleMask,
         maskImage: rippleMask,
       }}
@@ -279,7 +282,7 @@ function CreateHeading({
 }
 
 const createSubtitle =
-  "where cinematic storytelling intersects with advanced AI synthesis.";
+  "where creativity intersects with advanced AI synthesis.";
 
 export default function Create({
   entranceBlur,
@@ -395,11 +398,12 @@ export default function Create({
     >
       <motion.div className="absolute inset-0 flex h-full w-full flex-col justify-between p-12">
         <div className="pointer-events-none absolute inset-0 z-0 hidden overflow-hidden opacity-95 md:block">
-          {gridCells.map((cell) => (
+          {gridCells.map((cell, index) => (
             <GridCell
               key={cell.className}
               cell={cell}
               progress={scrollYProgress}
+              tone={curateCellShellTones[index]}
             />
           ))}
         </div>

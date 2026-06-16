@@ -3,8 +3,8 @@
  * Timing constants mirror `desktopHomeTransitions.ts`.
  */
 
-/** Visible silhouettes, not mush — matches reference ~36–42px. */
-export const DESKTOP_CURATE_FROST_BLUR_PX = 38;
+/** Matches Figma Curate BLUR layer (node 15:52). */
+export const DESKTOP_CURATE_FROST_BLUR_PX = 16.45;
 
 /** Fine grain overlay strength while frosted. */
 export const DESKTOP_CURATE_FROST_GRAIN_OPACITY = 0.5;

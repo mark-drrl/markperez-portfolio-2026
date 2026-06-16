@@ -35,9 +35,9 @@ export const DESKTOP_CURATE_CELL_BLUR_PX = 38;
 export const DESKTOP_WORK_CHROME_START = 0.58;
 export const DESKTOP_WORK_CHROME_END = DESKTOP_CURATE_WORK_HANDOFF_END;
 
-/** Edge glass trails chrome slightly, settles before scroll lock. */
+/** Edge glass trails chrome slightly — MUST reach full before the work scroll lock at 0.64. */
 export const DESKTOP_WORK_EDGE_START = 0.59;
-export const DESKTOP_WORK_EDGE_END = 0.68;
+export const DESKTOP_WORK_EDGE_END = 0.635;
 
 function clamp01(value: number) {
   return Math.min(1, Math.max(0, value));
@@ -385,14 +385,14 @@ export function desktopWorkEdgeVignetteOpacity(progress: number) {
   );
 }
 
-/** Curate shell stays until Work gallery covers it. */
+/** Curate shell stays until Work gallery covers it. Ramps fast to fully cover Create (no text bleed). */
 export function desktopCurateLayerOpacity(progress: number) {
   if (progress < 0.34) {
     return 0;
   }
 
-  if (progress < 0.42) {
-    return (progress - 0.34) / 0.08;
+  if (progress < 0.375) {
+    return (progress - 0.34) / 0.035;
   }
 
   if (progress >= DESKTOP_CURATE_WORK_HANDOFF_END) {

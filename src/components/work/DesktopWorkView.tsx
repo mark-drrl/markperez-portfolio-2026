@@ -5,14 +5,17 @@ import MarkPerezBrand from "@/components/MarkPerezBrand";
 import WorkSocialLinks from "@/components/WorkSocialLinks";
 import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import { workGalleryImages } from "@/constants/workGalleryImages";
-import { curateFrostedImageFilter } from "@/lib/curateFrostedBlur";
+import {
+  figmaCurateTransitionBlurStyle,
+  FIGMA_WORK_EDGE_BOTTOM_HEIGHT_VH,
+  FIGMA_WORK_EDGE_TOP_HEIGHT_VH,
+} from "@/lib/figmaBlurStyles";
 import {
   DESKTOP_WORK_CHROME_START,
   desktopCurateWorkHandoffGlassOpacity,
   desktopWorkChromeOpacity,
   desktopWorkEdgeVignetteOpacity,
   desktopWorkBackdropOpacity,
-  desktopWorkGalleryHandoffBlurPx,
   desktopWorkGalleryOpacity,
   desktopWorkLayerOpacity,
 } from "@/lib/desktopHomeTransitions";
@@ -42,30 +45,6 @@ import { useEffect, useRef, useState } from "react";
 
 const socialButtons = workPageSocialLinks;
 
-const workEdgeGlassTopStyle = {
-  background: "rgba(155, 155, 155, 0.02)",
-  backgroundBlendMode: "soft-light" as const,
-  filter: "blur(32px)",
-  WebkitBackdropFilter: "blur(2px)",
-  backdropFilter: "blur(2px)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 25%, rgba(0,0,0,0.64) 60%, rgba(0,0,0,0.18) 88%, transparent 100%)",
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 25%, rgba(0,0,0,0.64) 60%, rgba(0,0,0,0.18) 88%, transparent 100%)",
-};
-
-const workEdgeGlassBottomStyle = {
-  background: "rgba(155, 155, 155, 0.02)",
-  backgroundBlendMode: "soft-light" as const,
-  filter: "blur(32px)",
-  WebkitBackdropFilter: "blur(2px)",
-  backdropFilter: "blur(2px)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 25%, rgba(0,0,0,0.66) 62%, rgba(0,0,0,0.18) 90%, transparent 100%)",
-  maskImage:
-    "linear-gradient(to top, black 0%, black 25%, rgba(0,0,0,0.66) 62%, rgba(0,0,0,0.18) 90%, transparent 100%)",
-};
-
 interface DesktopWorkViewProps {
   scrollYProgress: MotionValue<number>;
   pointerEvents: MotionValue<"none" | "auto">;
@@ -89,9 +68,6 @@ export default function DesktopWorkView({
     desktopWorkBackdropOpacity,
   );
   const galleryOpacity = useTransform(scrollYProgress, desktopWorkGalleryOpacity);
-  const galleryBlur = useTransform(scrollYProgress, (progress) =>
-    curateFrostedImageFilter(desktopWorkGalleryHandoffBlurPx(progress)),
-  );
   const handoffGlassOpacity = useTransform(
     scrollYProgress,
     desktopCurateWorkHandoffGlassOpacity,
@@ -185,10 +161,9 @@ export default function DesktopWorkView({
       />
       <motion.div
         ref={galleryWheelRef}
-        className="absolute inset-0 z-0 overflow-hidden will-change-[filter,opacity]"
+        className="absolute inset-0 z-0 overflow-hidden"
         style={{
           opacity: galleryOpacity,
-          filter: galleryBlur,
           pointerEvents: galleryPointerEvents,
         }}
       >
@@ -196,21 +171,43 @@ export default function DesktopWorkView({
           virtualScroll={virtualScroll}
           linksEnabled={linksEnabled}
         />
+        {/* Edge blurs sit inside the same layer as the gallery so backdrop-filter can see the images */}
         <motion.div
-          className="pointer-events-none absolute inset-0 bg-[#EAEAEA]/16 backdrop-blur-[24px] saturate-[1.04]"
-          style={{ opacity: handoffGlassOpacity }}
+          className="pointer-events-none absolute inset-x-0 top-0"
+          style={{
+            opacity: edgeOpacity,
+            height: `${FIGMA_WORK_EDGE_TOP_HEIGHT_VH}vh`,
+            background:
+              "linear-gradient(to bottom, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 45%, transparent 80%)",
+            WebkitBackdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
+            backdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to bottom, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
+          }}
           aria-hidden
         />
-      </motion.div>
-
-      <motion.div className="pointer-events-none absolute inset-0 z-20" aria-hidden>
         <motion.div
-          className="absolute inset-x-0 top-0 h-44"
-          style={{ opacity: edgeOpacity, ...workEdgeGlassTopStyle }}
+          className="pointer-events-none absolute inset-x-0 bottom-0"
+          style={{
+            opacity: edgeOpacity,
+            height: `${FIGMA_WORK_EDGE_BOTTOM_HEIGHT_VH}vh`,
+            background:
+              "linear-gradient(to top, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 45%, transparent 80%)",
+            WebkitBackdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
+            backdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
+            WebkitMaskImage:
+              "linear-gradient(to top, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to top, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
+          }}
+          aria-hidden
         />
         <motion.div
-          className="absolute inset-x-0 bottom-0 h-48"
-          style={{ opacity: edgeOpacity, ...workEdgeGlassBottomStyle }}
+          className="pointer-events-none absolute inset-0 mix-blend-soft-light"
+          style={{ opacity: handoffGlassOpacity, ...figmaCurateTransitionBlurStyle }}
+          aria-hidden
         />
       </motion.div>
 

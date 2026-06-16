@@ -114,6 +114,23 @@ export default function Home() {
     if (inWork !== inWorkRef.current) {
       inWorkRef.current = inWork;
       setIsInWorkSection(inWork);
+
+      // Keep URL in sync so browser back from a works-* page returns here, not the hero.
+      if (typeof window !== "undefined") {
+        if (inWork && window.location.hash !== "#works") {
+          window.history.replaceState(
+            null,
+            "",
+            `${window.location.pathname}${window.location.search}#works`,
+          );
+        } else if (!inWork && window.location.hash === "#works") {
+          window.history.replaceState(
+            null,
+            "",
+            window.location.pathname + window.location.search,
+          );
+        }
+      }
     }
   }, []);
 
