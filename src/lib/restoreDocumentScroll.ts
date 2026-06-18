@@ -15,3 +15,14 @@ export function restoreNativeDocumentScroll() {
   body.style.removeProperty("height");
   body.style.removeProperty("position");
 }
+
+/** Reset window scroll so short routes do not inherit home-page depth. */
+export function resetDocumentScrollTop() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+}

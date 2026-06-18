@@ -1,10 +1,13 @@
 "use client";
 
 import { getSiteRouteMode, isHomePath } from "@/lib/routeMode";
-import { restoreNativeDocumentScroll } from "@/lib/restoreDocumentScroll";
+import {
+  resetDocumentScrollTop,
+  restoreNativeDocumentScroll,
+} from "@/lib/restoreDocumentScroll";
 import { unlockWorkScroll, workScrollBridge } from "@/lib/workScrollBridge";
 import { usePathname } from "next/navigation";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, type ReactNode } from "react";
 
 interface SiteLayoutClientProps {
   children: ReactNode;
@@ -32,6 +35,18 @@ function teardownHomeScroll() {
 export default function SiteLayoutClient({ children }: SiteLayoutClientProps) {
   const pathname = usePathname();
   const routeMode = getSiteRouteMode(pathname);
+
+  useLayoutEffect(() => {
+    if (isHomePath(pathname)) {
+      return;
+    }
+
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "auto";
+    }
+
+    resetDocumentScrollTop();
+  }, [pathname]);
 
   useEffect(() => {
     document.documentElement.dataset.routeMode = routeMode;
