@@ -39,6 +39,26 @@ export type CaseStudyReels = {
   items: readonly CaseStudyImage[];
 };
 
+export type CaseStudyDocument = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  /** Omitted when the source PDF exceeds hosting limits; previews still work. */
+  pdfSrc?: string;
+  previewDir: string;
+  coverSrc: string;
+  pageCount: number;
+  aspect?: string;
+  featured?: boolean;
+};
+
+export type CaseStudyDocuments = {
+  label: string;
+  heading: string;
+  intro?: string;
+  items: readonly CaseStudyDocument[];
+};
+
 export interface CaseStudyContent {
   slug: string;
   index: string;
@@ -69,6 +89,7 @@ export interface CaseStudyContent {
   };
   film?: CaseStudyFilm;
   reels?: CaseStudyReels;
+  documents?: CaseStudyDocuments;
   gallery: {
     label: string;
     heading: string;

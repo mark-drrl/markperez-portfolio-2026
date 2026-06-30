@@ -1,0 +1,11 @@
+{
+  "id": "azimut-viktoria",
+  "title": "Azimut 75 Viktoria",
+  "subtitle": "Yacht brochure",
+  "pdfSrc": "/lsb/pdf/azimut-75-viktoria.pdf",
+  "previewDir": "/lsb/pdf-previews/azimut-viktoria",
+  "coverSrc": "/lsb/pdf-previews/azimut-viktoria/cover.webp",
+  "pageCount": 6,
+  "aspect": "aspect-[3/4]",
+  "featured": false
+}

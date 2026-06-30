@@ -16,6 +16,12 @@ export type WorkColumnDefinition = {
 /** Virtual pixels for one full speed-percent travel unit (see `computeColumnTranslateVh`). */
 export const WORK_VIRTUAL_SCROLL_DISTANCE = 1400;
 
+/**
+ * Nudges Work column tiles to match Create/Curate absolute grid shells at handoff.
+ * Curate cell positions are the source of truth — only the Work gallery is adjusted.
+ */
+export const WORK_GALLERY_TRANSLATE_BIAS_VH = -0.5;
+
 export const workColumns = [
   {
     left: "0%",
@@ -47,14 +53,14 @@ export const workColumns = [
     initialY: 0,
     tiles: [
       { height: 57.5, image: 5 },
-      { height: 41.5, image: 10 },
-      { height: 57.5, image: 6 },
+      { height: 41.5, image: 6 },
+      { height: 57.5, image: 10 },
       { height: 57.5, image: 8 },
     ],
   },
 ] as const satisfies readonly WorkColumnDefinition[];
 
-/** Desktop Curate preview cells — same positions as Work tiles at virtual offset 0. */
+/** Desktop Curate preview cells — Work gallery geometry is tuned to match these at handoff. */
 // Varied grey tones for the grid shells, shared by the Create boxes and the
 // Curate fill shells (index-aligned). Matching tones make the boxes look like
 // they persist across the Create→Curate handoff and then get filled.
@@ -166,7 +172,12 @@ export function computeColumnTranslateVh(
   const rawOffset =
     ((travel % cycleHeight) + cycleHeight) % cycleHeight;
 
-  return column.initialY - cycleHeight - rawOffset;
+  return (
+    column.initialY -
+    cycleHeight -
+    rawOffset +
+    WORK_GALLERY_TRANSLATE_BIAS_VH
+  );
 }
 
 export function workImageIndexAtColumnSample(

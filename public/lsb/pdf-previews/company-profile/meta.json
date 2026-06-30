@@ -1,0 +1,11 @@
+{
+  "id": "company-profile",
+  "title": "Company Profile",
+  "subtitle": "LSB Yacht Charter",
+  "pdfSrc": "/lsb/pdf/company-profile.pdf",
+  "previewDir": "/lsb/pdf-previews/company-profile",
+  "coverSrc": "/lsb/pdf-previews/company-profile/cover.webp",
+  "pageCount": 35,
+  "aspect": "aspect-[16/10]",
+  "featured": true
+}

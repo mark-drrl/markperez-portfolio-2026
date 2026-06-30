@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# LSB company profile exceeds GitHub 100MB limit — keep locally for npm run generate:lsb-pdf
+public/lsb/COMPANYPROFILE_LATEST.pdf
+public/lsb/pdf/company-profile.pdf

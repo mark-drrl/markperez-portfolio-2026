@@ -1,0 +1,46 @@
+[
+  {
+    "id": "company-profile",
+    "title": "Company Profile",
+    "subtitle": "LSB Yacht Charter",
+    "pdfSrc": "/lsb/pdf/company-profile.pdf",
+    "previewDir": "/lsb/pdf-previews/company-profile",
+    "coverSrc": "/lsb/pdf-previews/company-profile/cover.webp",
+    "pageCount": 35,
+    "aspect": "aspect-[16/10]",
+    "featured": true
+  },
+  {
+    "id": "benetti-gallus",
+    "title": "Benetti 115 Gallus",
+    "subtitle": "Yacht brochure",
+    "pdfSrc": "/lsb/pdf/benetti-115-gallus.pdf",
+    "previewDir": "/lsb/pdf-previews/benetti-gallus",
+    "coverSrc": "/lsb/pdf-previews/benetti-gallus/cover.webp",
+    "pageCount": 6,
+    "aspect": "aspect-[3/4]",
+    "featured": false
+  },
+  {
+    "id": "sunseeker-why-not",
+    "title": "Sunseeker 82 Why Not",
+    "subtitle": "Yacht brochure",
+    "pdfSrc": "/lsb/pdf/sunseeker-82-why-not.pdf",
+    "previewDir": "/lsb/pdf-previews/sunseeker-why-not",
+    "coverSrc": "/lsb/pdf-previews/sunseeker-why-not/cover.webp",
+    "pageCount": 6,
+    "aspect": "aspect-[3/4]",
+    "featured": false
+  },
+  {
+    "id": "azimut-viktoria",
+    "title": "Azimut 75 Viktoria",
+    "subtitle": "Yacht brochure",
+    "pdfSrc": "/lsb/pdf/azimut-75-viktoria.pdf",
+    "previewDir": "/lsb/pdf-previews/azimut-viktoria",
+    "coverSrc": "/lsb/pdf-previews/azimut-viktoria/cover.webp",
+    "pageCount": 6,
+    "aspect": "aspect-[3/4]",
+    "featured": false
+  }
+]

@@ -1,10 +1,14 @@
 "use client";
 
 import LuxuryCursor from "@/components/LuxuryCursor";
+import {
+  CASE_STUDY_VIEWER_CLOSE_EVENT,
+  CASE_STUDY_VIEWER_OPEN_EVENT,
+} from "@/lib/caseStudyViewer";
 import { resetDocumentScrollTop } from "@/lib/restoreDocumentScroll";
 import Lenis from "lenis";
 import Link from "next/link";
-import { useEffect, useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { monoClass } from "./caseStudyStyles";
 
 interface CaseStudyShellProps {
@@ -24,6 +28,8 @@ export default function CaseStudyShell({
   topRightLabel,
   backHref = "/#works",
 }: CaseStudyShellProps) {
+  const lenisRef = useRef<Lenis | null>(null);
+
   useLayoutEffect(() => {
     resetDocumentScrollTop();
   }, []);
@@ -40,6 +46,7 @@ export default function CaseStudyShell({
     resetDocumentScrollTop();
 
     const lenis = new Lenis({ lerp: 0.09, smoothWheel: true });
+    lenisRef.current = lenis;
     lenis.scrollTo(0, { immediate: true, force: true });
     let frameId = 0;
 
@@ -52,7 +59,26 @@ export default function CaseStudyShell({
 
     return () => {
       window.cancelAnimationFrame(frameId);
+      lenisRef.current = null;
       lenis.destroy();
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleViewerOpen() {
+      lenisRef.current?.stop();
+    }
+
+    function handleViewerClose() {
+      lenisRef.current?.start();
+    }
+
+    window.addEventListener(CASE_STUDY_VIEWER_OPEN_EVENT, handleViewerOpen);
+    window.addEventListener(CASE_STUDY_VIEWER_CLOSE_EVENT, handleViewerClose);
+
+    return () => {
+      window.removeEventListener(CASE_STUDY_VIEWER_OPEN_EVENT, handleViewerOpen);
+      window.removeEventListener(CASE_STUDY_VIEWER_CLOSE_EVENT, handleViewerClose);
     };
   }, []);
 

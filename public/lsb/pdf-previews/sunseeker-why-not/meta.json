@@ -1,0 +1,11 @@
+{
+  "id": "sunseeker-why-not",
+  "title": "Sunseeker 82 Why Not",
+  "subtitle": "Yacht brochure",
+  "pdfSrc": "/lsb/pdf/sunseeker-82-why-not.pdf",
+  "previewDir": "/lsb/pdf-previews/sunseeker-why-not",
+  "coverSrc": "/lsb/pdf-previews/sunseeker-why-not/cover.webp",
+  "pageCount": 6,
+  "aspect": "aspect-[3/4]",
+  "featured": false
+}

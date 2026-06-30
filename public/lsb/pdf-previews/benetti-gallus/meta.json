@@ -1,0 +1,11 @@
+{
+  "id": "benetti-gallus",
+  "title": "Benetti 115 Gallus",
+  "subtitle": "Yacht brochure",
+  "pdfSrc": "/lsb/pdf/benetti-115-gallus.pdf",
+  "previewDir": "/lsb/pdf-previews/benetti-gallus",
+  "coverSrc": "/lsb/pdf-previews/benetti-gallus/cover.webp",
+  "pageCount": 6,
+  "aspect": "aspect-[3/4]",
+  "featured": false
+}

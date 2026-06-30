@@ -9,7 +9,8 @@
     "lint": "eslint",
     "optimize:curate-mobile": "node scripts/optimize-curate-mobile.mjs",
     "debug:transitions": "tsx scripts/log-transition-opacity.ts",
-    "debug:curate-work": "node scripts/debug-curate-work-scroll.mjs"
+    "debug:curate-work": "node scripts/debug-curate-work-scroll.mjs",
+    "generate:lsb-pdf": "node scripts/generate-lsb-pdf-previews.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
@@ -20,12 +21,14 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@napi-rs/canvas": "^0.1.80",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "pdfjs-dist": "^5.4.296",
     "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"

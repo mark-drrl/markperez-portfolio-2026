@@ -1,5 +1,6 @@
 import type { CaseStudyContent } from "@/constants/caseStudies/types";
 import CaseStudyCredits from "./CaseStudyCredits";
+import CaseStudyDocuments from "./CaseStudyDocuments";
 import CaseStudyFilm from "./CaseStudyFilm";
 import CaseStudyFullBleed from "./CaseStudyFullBleed";
 import CaseStudyGallery from "./CaseStudyGallery";
@@ -29,6 +30,7 @@ export default function CaseStudyPage({ content }: CaseStudyPageProps) {
         {content.gallery.items.length > 0 ? (
           <CaseStudyGallery content={content} />
         ) : null}
+        {content.documents ? <CaseStudyDocuments content={content} /> : null}
         <CaseStudyCredits content={content} />
         <CaseStudyOutro content={content} />
       </main>
