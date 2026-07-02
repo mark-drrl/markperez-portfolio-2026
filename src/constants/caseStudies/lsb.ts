@@ -179,6 +179,19 @@ const base: Omit<CaseStudyContent, "index" | "next"> = {
   },
   toolbox: [...socialToolbox, "Adobe InDesign"],
   credits: markPerezCredits("LSB Yacht Charter"),
+  // Fill in real numbers to activate the Results/Impact section
+  // (renders between Process and Reels; hidden while commented out):
+  // results: {
+  //   label: "Impact",
+  //   heading: "What it moved",
+  //   intro: "Key metrics from the campaign launch.",
+  //   stats: [
+  //     { value: "2.4M", label: "Impressions", description: "Across Instagram and TikTok in 30 days" },
+  //     { value: "18%", label: "Engagement Rate", description: "3× industry average for luxury travel" },
+  //     { value: "340+", label: "Booking Inquiries", description: "Directly attributed to content" },
+  //     { value: "6", label: "Vessels Featured", description: "Benetti, Sunseeker, and Azimut fleet" },
+  //   ],
+  // },
 };
 
 export const lsbCaseStudy = finalizeCaseStudy(base);

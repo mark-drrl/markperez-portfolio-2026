@@ -96,7 +96,8 @@ function ReplacementImage({
   tone,
 }: ReplacementImageProps) {
   const isMobile = variant === "mobile";
-  const src = isMobile ? curateMobileImages[index] : curateDesktopImages[index];
+  const image = isMobile ? curateMobileImages[index] : curateDesktopImages[index];
+  const { src, alt } = image;
   const opacity = useTransform(
     scrollYProgress,
     [cell.start, cell.end],
@@ -180,7 +181,7 @@ function ReplacementImage({
       >
         <img
           src={src}
-          alt=""
+          alt={alt}
           loading={isMobile ? "lazy" : "eager"}
           decoding="async"
           className="h-full w-full object-cover grayscale contrast-[1.02] brightness-[0.98] saturate-0"

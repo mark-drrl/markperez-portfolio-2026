@@ -222,8 +222,7 @@ export default function DesktopWorkView({
           </div>
           <p className="font-neue max-w-[520px] font-semibold leading-relaxed tracking-[0.08em]">
             Full-stack Creative Specialist bridging high-end cinematography,
-            AI-driven art direction, social media strategy, and immersive web
-            architecture.
+            AI-driven art direction, and social media strategy.
           </p>
           <p className="font-neue text-right font-semibold leading-relaxed">
             DUBAI, UAE <span className="text-[#9F1F2E]">{"//"}</span>

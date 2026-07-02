@@ -16,8 +16,30 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MARK PEREZ",
-  description: "Selected Works",
+  metadataBase: new URL("https://iammarkperez.com"),
+  title: {
+    default: "MARK PEREZ",
+    template: "%s — MARK PEREZ",
+  },
+  description:
+    "Portfolio of Mark Perez — content creator, graphic designer, and AI-driven art director based in Dubai.",
+  openGraph: {
+    siteName: "MARK PEREZ",
+    locale: "en_US",
+    type: "website",
+    images: [
+      {
+        url: "/og/default.jpg",
+        width: 1200,
+        height: 630,
+        alt: "MARK PEREZ — Content Creator & Graphic Designer, Dubai",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og/default.jpg"],
+  },
 };
 
 export default function RootLayout({

@@ -161,7 +161,7 @@ export default function AboutContactShell({ initialTab }: AboutContactShellProps
                 </motion.div>
               </div>
               <p className="font-neue absolute bottom-5 left-1/2 max-w-[190px] -translate-x-1/2 text-center text-[8px] leading-[1.25] tracking-[0.16em] text-white/82 md:hidden">
-                I like the outdoors so I used this random photo lol
+                I like the outdoors.
               </p>
             </div>
 
@@ -182,7 +182,7 @@ export default function AboutContactShell({ initialTab }: AboutContactShellProps
             </div>
 
             <p className="font-neue absolute bottom-[8vh] left-1/2 hidden max-w-[190px] -translate-x-1/2 text-center text-[9px] leading-[1.25] tracking-[0.16em] text-black/44 md:block">
-              I like the outdoors so I used this random photo lol
+              I like the outdoors.
             </p>
           </motion.section>
         ) : (
