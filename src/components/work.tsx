@@ -3,6 +3,7 @@
 import DesktopWorkView from "@/components/work/DesktopWorkView";
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import { getWorkGalleryHref } from "@/constants/workGalleryLinks";
+import { getWorkGalleryProject } from "@/constants/workGalleryProjects";
 import { GalleryImage } from "@/components/GalleryMedia";
 import {
   getCenteredWorkGalleryIndex,
@@ -52,7 +53,15 @@ function getWorkHref(src: string) {
   return getWorkGalleryHref(src);
 }
 
-function WorkImageLink({ src, children }: { src: string; children: ReactNode }) {
+function WorkImageLink({
+  src,
+  children,
+  ariaLabel,
+}: {
+  src: string;
+  children: ReactNode;
+  ariaLabel?: string;
+}) {
   const href = getWorkHref(src);
   const warmedRef = useRef(false);
 
@@ -72,6 +81,7 @@ function WorkImageLink({ src, children }: { src: string; children: ReactNode }) 
         prefetch={false}
         className="block h-full w-full"
         data-no-magnetic
+        aria-label={ariaLabel}
         onPointerEnter={handlePointerEnter}
       >
         {children}
@@ -179,24 +189,47 @@ function WorkMobileGallery({
       className="pointer-events-auto absolute inset-0 z-0 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] [touch-action:pan-y] md:hidden"
     >
       <div className="flex flex-col items-center gap-[0.5vh] pt-[22dvh] pb-[22dvh]">
-        {mobileWorkLoopItems.map((item) => (
-          <div
-            key={item.key}
-            data-work-gallery-item
-            data-gallery-index={item.index}
-            data-loop-copy={item.copy}
-            className="h-[56dvh] w-full max-w-full shrink-0 overflow-hidden bg-neutral-300"
-          >
-            <WorkImageLink src={item.src}>
-              <GalleryImage
-                src={item.src}
-                alt=""
-                isFocused={focusedIndex === item.index}
-                className="object-cover"
-              />
-            </WorkImageLink>
-          </div>
-        ))}
+        {mobileWorkLoopItems.map((item) => {
+          const project = getWorkGalleryProject(item.src);
+          const ariaLabel = project
+            ? `${project.title} — ${project.discipline}, ${project.year} (case study)`
+            : undefined;
+          return (
+            <div
+              key={item.key}
+              data-work-gallery-item
+              data-gallery-index={item.index}
+              data-loop-copy={item.copy}
+              className="relative h-[56dvh] w-full max-w-full shrink-0 overflow-hidden bg-neutral-300"
+            >
+              <WorkImageLink src={item.src} ariaLabel={ariaLabel}>
+                <GalleryImage
+                  src={item.src}
+                  alt=""
+                  isFocused={focusedIndex === item.index}
+                  className="object-cover"
+                />
+              </WorkImageLink>
+              {project ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 px-5 pb-4 pt-12"
+                  style={{
+                    background:
+                      "linear-gradient(to top, rgba(0,0,0,0.52) 0%, rgba(0,0,0,0.28) 55%, transparent 100%)",
+                  }}
+                  aria-hidden
+                >
+                  <p className="font-editorial text-[1.25rem] leading-[0.92] tracking-[0.04em] text-white">
+                    {project.title}
+                  </p>
+                  <p className="font-neue mt-1 text-[9px] font-semibold uppercase tracking-[0.15em] text-white/70">
+                    {project.year}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

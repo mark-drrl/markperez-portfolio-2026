@@ -258,9 +258,6 @@ export default function DesktopWorkView({
             <p className="font-editorial text-5xl leading-none tracking-[-0.02em] text-[#9F1F2E]">
               works
             </p>
-            <p className="font-neue mt-2 text-[10px] font-semibold tracking-[0.15em] text-white">
-              CLICK ON AN IMAGE
-            </p>
           </div>
         </div>
       </motion.div>
