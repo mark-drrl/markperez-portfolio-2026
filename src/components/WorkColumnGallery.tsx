@@ -2,7 +2,7 @@
 
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import { getWorkGalleryHref } from "@/constants/workGalleryLinks";
-import { workGalleryProjectTitle } from "@/constants/workGalleryProjectTitles";
+import { getWorkGalleryProject } from "@/constants/workGalleryProjects";
 import {
   computeColumnTranslateVh,
   workColumns,
@@ -18,7 +18,7 @@ const workImages = workGalleryImages;
 const galleryImageClass = (linksEnabled: boolean) =>
   `h-full w-full object-cover grayscale transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${
     linksEnabled
-      ? "contrast-125 brightness-[0.96] group-hover:grayscale-0 group-hover:contrast-110 group-hover:brightness-105"
+      ? "contrast-125 brightness-[0.96] group-hover/tile:grayscale-0 group-hover/tile:contrast-110 group-hover/tile:brightness-105 group-focus-visible/tile:grayscale-0 group-focus-visible/tile:contrast-110 group-focus-visible/tile:brightness-105"
       : ""
   }`;
 
@@ -26,10 +26,12 @@ function WorkImageLink({
   src,
   children,
   linksEnabled,
+  ariaLabel,
 }: {
   src: string;
   children: ReactNode;
   linksEnabled: boolean;
+  ariaLabel?: string;
 }) {
   const href = getWorkGalleryHref(src);
   const warmedRef = useRef(false);
@@ -48,8 +50,9 @@ function WorkImageLink({
       <Link
         href={href}
         prefetch={false}
-        className="block h-full w-full"
+        className="group/tile block h-full w-full outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#9F1F2E]"
         data-work-gallery-link
+        aria-label={ariaLabel}
         onPointerEnter={handlePointerEnter}
       >
         {children}
@@ -62,9 +65,13 @@ function WorkImageLink({
 
 function GalleryHoverTitle({
   title,
+  discipline,
+  year,
   linksEnabled,
 }: {
   title: string;
+  discipline: string;
+  year: string;
   linksEnabled: boolean;
 }) {
   if (!linksEnabled) {
@@ -72,10 +79,15 @@ function GalleryHoverTitle({
   }
 
   return (
-    <div className="pointer-events-none absolute inset-0 flex items-center justify-start bg-black/0 p-6 transition-[background-color] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:bg-black/18 md:p-8">
-      <p className="font-editorial max-w-[78%] translate-y-3 text-left text-[clamp(1.15rem,2.2vw,1.85rem)] leading-[0.92] tracking-[0.04em] text-white opacity-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:translate-y-0 group-hover:opacity-100">
-        {title}
-      </p>
+    <div className="pointer-events-none absolute inset-0 flex items-end justify-start bg-black/0 p-6 transition-[background-color] duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/tile:bg-black/18 group-focus-visible/tile:bg-black/18 md:p-8">
+      <div className="translate-y-3 opacity-0 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/tile:translate-y-0 group-hover/tile:opacity-100 group-focus-visible/tile:translate-y-0 group-focus-visible/tile:opacity-100">
+        <p className="font-editorial max-w-[78%] text-left text-[clamp(1.15rem,2.2vw,1.85rem)] leading-[0.92] tracking-[0.04em] text-white">
+          {title}
+        </p>
+        <p className="font-neue mt-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/70">
+          {discipline} — {year}
+        </p>
+      </div>
     </div>
   );
 }
@@ -87,11 +99,15 @@ function GalleryImage({
   src: string;
   linksEnabled: boolean;
 }) {
-  const title = workGalleryProjectTitle(src);
+  const project = getWorkGalleryProject(src);
+
+  const ariaLabel = project
+    ? `${project.title} — ${project.discipline}, ${project.year} (case study)`
+    : undefined;
 
   return (
-    <WorkImageLink src={src} linksEnabled={linksEnabled}>
-      <div className="group relative h-full w-full overflow-hidden">
+    <WorkImageLink src={src} linksEnabled={linksEnabled} ariaLabel={ariaLabel}>
+      <div className="relative h-full w-full overflow-hidden">
         <img
           src={src}
           alt=""
@@ -99,8 +115,13 @@ function GalleryImage({
           loading="lazy"
           decoding="async"
         />
-        {title ? (
-          <GalleryHoverTitle title={title} linksEnabled={linksEnabled} />
+        {project ? (
+          <GalleryHoverTitle
+            title={project.title}
+            discipline={project.discipline}
+            year={project.year}
+            linksEnabled={linksEnabled}
+          />
         ) : null}
       </div>
     </WorkImageLink>
