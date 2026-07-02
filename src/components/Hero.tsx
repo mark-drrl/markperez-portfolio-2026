@@ -1,5 +1,6 @@
 "use client";
 
+import HeroPointillism from "@/components/HeroPointillism";
 import { mobileSectionScrollKeys } from "@/lib/mobileHomeOpacity";
 import { motion, type MotionValue, useTransform } from "framer-motion";
 import Link from "next/link";
@@ -103,6 +104,11 @@ export default function Hero({
         }`}
         aria-hidden="true"
       />
+      {!mobileLite && (
+        <div className="pointer-events-none absolute inset-0 z-[2] hidden md:block">
+          <HeroPointillism heroOpacity={opacity} />
+        </div>
+      )}
       <div className="absolute inset-0 z-10">
         {mobileLite ? (
           <div className="relative h-full w-full">
