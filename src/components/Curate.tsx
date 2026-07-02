@@ -8,6 +8,7 @@ import {
   curateDesktopImages,
   curateMobileImages,
 } from "@/constants/curateImages";
+import { workGallerySrcSet } from "@/constants/workGalleryImages";
 import {
   desktopCurateFrostGrainOpacity,
   FROSTED_GRAIN_TEXTURE,
@@ -187,6 +188,7 @@ function ReplacementImage({
           className="h-full w-full object-cover grayscale contrast-[1.02] brightness-[0.98] saturate-0"
           // For mobile curate images, serve smaller WebP variants by convention.
           // e.g. /work/mobile/curate-1.webp → /work/mobile/curate-1-400w.webp 400w, ...
+          // For desktop curate images (work gallery sources), use the shared resized variants.
           {...(isMobile && /\/work\/mobile\/curate-\d+\.webp$/i.test(src)
             ? {
                 srcSet: [
@@ -196,7 +198,12 @@ function ReplacementImage({
                 ].join(", "),
                 sizes: "(max-width: 480px) 100vw, 90vw",
               }
-            : {})}
+            : !isMobile
+              ? {
+                  srcSet: workGallerySrcSet(src),
+                  sizes: "33vw",
+                }
+              : {})}
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}

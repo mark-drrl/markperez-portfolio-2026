@@ -202,22 +202,6 @@ export default function Home() {
     [0, 0.58, 0.64, 1],
     [0.25, 0.25, 0, 0],
   );
-  const scrollProgressScaleXMobile = useTransform(
-    scrollYProgress,
-    [0, MOBILE_WORK_SCROLL_PROGRESS, 1],
-    [0, 1, 1],
-  );
-  const scrollProgressScaleXDesktop = useTransform(
-    scrollYProgress,
-    [0, 0.64, 1],
-    [0, 1, 1],
-  );
-  const scrollProgressOpacity = useTransform(
-    scrollYProgress,
-    [0, 0.6, 0.64, 1],
-    [1, 1, 0, 0],
-  );
-
   useEffect(() => {
     if (pathname !== "/") {
       const lenis = workScrollBridge.lenis;
@@ -440,22 +424,6 @@ export default function Home() {
         <HomeMobileStack scrollYProgress={scrollYProgress} />
         <HomeDesktopStack scrollYProgress={scrollYProgress} />
       </div>
-      <motion.div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] h-1.5 origin-left bg-[#9F1F2E] max-md:hidden"
-        style={{
-          opacity: scrollProgressOpacity,
-          scaleX: scrollProgressScaleXDesktop,
-        }}
-        aria-hidden="true"
-      />
-      <motion.div
-        className="pointer-events-none fixed inset-x-0 bottom-0 z-[60] h-1.5 origin-left bg-[#9F1F2E] md:hidden"
-        style={{
-          opacity: scrollProgressOpacity,
-          scaleX: scrollProgressScaleXMobile,
-        }}
-        aria-hidden="true"
-      />
       <div className="hidden md:contents">
         {!isInWorkSection ? (
           <>
