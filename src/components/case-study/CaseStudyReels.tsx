@@ -60,6 +60,7 @@ export default function CaseStudyReels({ reels }: CaseStudyReelsProps) {
               loop
               playsInline
               preload="metadata"
+              poster={item.src.replace(/\.mp4$/i, "-poster.jpg")}
             />
             <span
               className={`absolute left-4 top-4 text-[10px] uppercase tracking-[0.24em] text-white/70 ${monoClass}`}

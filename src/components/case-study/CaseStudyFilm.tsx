@@ -52,6 +52,7 @@ export default function CaseStudyFilm({ content }: CaseStudyFilmProps) {
                 controls
                 playsInline
                 preload="metadata"
+                poster={film.src.replace(/\.mp4$/i, "-poster.jpg")}
               />
             )}
           </div>
