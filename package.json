@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "optimize:curate-mobile": "node scripts/optimize-curate-mobile.mjs",
+    "optimize:curate": "node scripts/optimize-curate.mjs",
     "debug:transitions": "tsx scripts/log-transition-opacity.ts",
     "debug:curate-work": "node scripts/debug-curate-work-scroll.mjs",
     "generate:lsb-pdf": "node scripts/generate-lsb-pdf-previews.mjs"
