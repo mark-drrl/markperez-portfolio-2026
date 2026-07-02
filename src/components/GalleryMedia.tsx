@@ -18,6 +18,8 @@ interface GalleryImageProps {
   className?: string;
   loading?: "eager" | "lazy";
   freezeTransitions?: boolean;
+  srcSet?: string;
+  sizes?: string;
 }
 
 export function GalleryImage({
@@ -27,10 +29,14 @@ export function GalleryImage({
   className = "object-contain",
   loading = "lazy",
   freezeTransitions = false,
+  srcSet,
+  sizes,
 }: GalleryImageProps) {
   return (
     <motion.img
       src={src}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={alt}
       className={
         className.includes("h-auto")

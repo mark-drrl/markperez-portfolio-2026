@@ -185,6 +185,18 @@ function ReplacementImage({
           loading={isMobile ? "lazy" : "eager"}
           decoding="async"
           className="h-full w-full object-cover grayscale contrast-[1.02] brightness-[0.98] saturate-0"
+          // For mobile curate images, serve smaller WebP variants by convention.
+          // e.g. /work/mobile/curate-1.webp → /work/mobile/curate-1-400w.webp 400w, ...
+          {...(isMobile && /\/work\/mobile\/curate-\d+\.webp$/i.test(src)
+            ? {
+                srcSet: [
+                  src.replace(/\.webp$/i, "-400w.webp") + " 400w",
+                  src.replace(/\.webp$/i, "-800w.webp") + " 800w",
+                  src + " 1200w",
+                ].join(", "),
+                sizes: "(max-width: 480px) 100vw, 90vw",
+              }
+            : {})}
           onError={(event) => {
             event.currentTarget.style.display = "none";
           }}

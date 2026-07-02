@@ -38,6 +38,21 @@ import {
 
 const workImages = workGalleryImages;
 
+/**
+ * Derives a WebP srcSet from a work gallery image path.
+ * "/work/portfolio-3.jpg" → "/work/resized/portfolio-3-400w.webp 400w, ..."
+ */
+function workGallerySrcSet(src: string): string | undefined {
+  const match = src.match(/\/work\/(portfolio-\d+)\.(jpg|png|webp)$/i);
+  if (!match) return undefined;
+  const base = match[1];
+  return [
+    `/work/resized/${base}-400w.webp 400w`,
+    `/work/resized/${base}-800w.webp 800w`,
+    `/work/resized/${base}-1600w.webp 1600w`,
+  ].join(", ");
+}
+
 const mobileWorkLoopItems = Array.from(
   { length: MOBILE_WORK_LOOP_COPIES },
   (_, copy) =>
@@ -205,6 +220,8 @@ function WorkMobileGallery({
               <WorkImageLink src={item.src} ariaLabel={ariaLabel}>
                 <GalleryImage
                   src={item.src}
+                  srcSet={workGallerySrcSet(item.src)}
+                  sizes="(max-width: 480px) 100vw, (max-width: 767px) 90vw, 100vw"
                   alt=""
                   isFocused={focusedIndex === item.index}
                   className="object-cover"
