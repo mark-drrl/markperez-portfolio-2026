@@ -257,9 +257,6 @@ export default function HomeDesktopStack({
           aria-hidden="true"
         />
 
-        {/* Red thread — sits above Create glass, below Curate content (z-[27]) */}
-        <RedThread scrollYProgress={scrollYProgress} />
-
         {/* Curate */}
         <motion.div
           className="pointer-events-none absolute inset-0 z-30 h-full w-full"
@@ -273,6 +270,9 @@ export default function HomeDesktopStack({
             scrollYProgress={scrollYProgress}
           />
         </motion.div>
+
+        {/* Red thread — z-[33], above Curate (z-30), below Work (z-35); rendered after Curate so DOM order matches stacking intent */}
+        <RedThread scrollYProgress={scrollYProgress} />
 
         {/* Quiet beat — Curate→Work overlap (WS4). z-[32] so it sits above Curate bg. */}
         <motion.div

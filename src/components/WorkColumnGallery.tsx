@@ -1,6 +1,6 @@
 "use client";
 
-import { workGalleryImages } from "@/constants/workGalleryImages";
+import { workGalleryImages, workGallerySrcSet } from "@/constants/workGalleryImages";
 import { getWorkGalleryHref } from "@/constants/workGalleryLinks";
 import { getWorkGalleryProject } from "@/constants/workGalleryProjects";
 import {
@@ -15,23 +15,6 @@ import { type ReactNode, useCallback, useEffect, useRef } from "react";
 
 const workImages = workGalleryImages;
 
-/**
- * Derives a WebP srcSet from a work gallery image path.
- * e.g. "/work/portfolio-3.jpg" →
- *   "/work/resized/portfolio-3-400w.webp 400w,
- *    /work/resized/portfolio-3-800w.webp 800w,
- *    /work/resized/portfolio-3-1600w.webp 1600w"
- */
-function workGallerySrcSet(src: string): string | undefined {
-  const match = src.match(/\/work\/(portfolio-\d+)\.(jpg|png|webp)$/i);
-  if (!match) return undefined;
-  const base = match[1];
-  return [
-    `/work/resized/${base}-400w.webp 400w`,
-    `/work/resized/${base}-800w.webp 800w`,
-    `/work/resized/${base}-1600w.webp 1600w`,
-  ].join(", ");
-}
 
 const galleryImageClass = (linksEnabled: boolean) =>
   `h-full w-full object-cover grayscale transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${

@@ -22,7 +22,8 @@ const prefersReducedMotion =
  * Organic path: enters top-center, sweeps left past Convey video rect,
  * crosses right through Create grid zone, loops around Curate center,
  * exits bottom toward Work.
- * Z-index: z-[27] — above Create→Curate glass (z-25), below Curate content (z-30).
+ * Z-index: z-[33] — above Curate content (z-30), below Work (z-35).
+ * Rendered AFTER the Curate layer in DOM order so it stays visible over Curate.
  * Desktop only (hidden md:contents parent handles breakpoint).
  */
 export default function RedThread({ scrollYProgress }: RedThreadProps) {
@@ -57,7 +58,7 @@ export default function RedThread({ scrollYProgress }: RedThreadProps) {
 
   return (
     <motion.div
-      className="pointer-events-none absolute inset-0 z-[27]"
+      className="pointer-events-none absolute inset-0 z-[33]"
       style={{ opacity: threadOpacity }}
       aria-hidden="true"
     >

@@ -3,15 +3,18 @@
 /**
  * HeroPointillism — canvas-based dot field for the hero.
  *
- * Branding: ink #151515 (majority, low alpha) + red #9F1F2E accent (~8% of dots).
+ * Tuning: Nothing-brand minimal — sparse grid (~30px spacing), near-uniform 1 px dots,
+ * very low alpha (ink 0.14–0.24, red 0.30–0.40), 4% red accent, quiet entrance & drift.
+ *
+ * Branding: ink #151515 (majority, low alpha) + red #9F1F2E accent (~4% of dots).
  * Desktop only: wrapped in hidden md:block; never renders on mobile / mobileLite paths.
  *
  * Architecture:
  *  - Single rAF loop, O(n) per frame, zero per-frame allocations (Float32Array backing).
  *  - Pauses when document.hidden OR heroOpacity MotionValue drops to 0.
  *  - Entrance: scatter-to-place over ~900 ms, staggered by per-dot noise phase.
- *  - Idle life: slow sine drift (amplitude ≤1.5 px) per dot phase.
- *  - Cursor repulsion: 130 px radius, radial falloff, spring back (stiffness 0.08, damping 0.82).
+ *  - Idle life: slow sine drift (amplitude ≤0.8 px) per dot phase.
+ *  - Cursor repulsion: 100 px radius, radial falloff, spring back (stiffness 0.08, damping 0.82).
  *  - Density mask: dots thin toward center-bottom tagline zone.
  *  - Reduced motion: single static draw, no rAF.
  *  - DPR capped at 2.
@@ -25,15 +28,15 @@ const INK_COLOR = "51,51,51"; // #333333 rendered on off-white #efeeeb → reads
 const RED_COLOR = "159,31,46"; // #9F1F2E
 
 // ─── Tuning constants ─────────────────────────────────────────────────────────
-const GRID_SPACING_AT_1440 = 16; // px between dot centres at reference width
+const GRID_SPACING_AT_1440 = 30; // px between dot centres at reference width (sparse, Nothing-style)
 const MAX_DOTS = 2600;
-const RED_FRACTION = 0.08; // ~8% dots are red accent
-const DOT_RADIUS_MIN = 0.9; // px (logical)
-const DOT_RADIUS_MAX = 1.5;
-const REPEL_RADIUS = 130; // px (logical)
+const RED_FRACTION = 0.04; // ~4% dots are red accent
+const DOT_RADIUS_MIN = 1.0; // px (logical) — near-uniform, matrix-like
+const DOT_RADIUS_MAX = 1.2;
+const REPEL_RADIUS = 100; // px (logical)
 const SPRING_STIFFNESS = 0.08;
 const SPRING_DAMPING = 0.82;
-const IDLE_AMPLITUDE = 1.5; // px
+const IDLE_AMPLITUDE = 0.8; // px — barely breathing
 const IDLE_SPEED = 0.0008; // radians per ms
 const ENTRANCE_DURATION = 900; // ms
 
@@ -136,15 +139,15 @@ export default function HeroPointillism({ heroOpacity }: HeroPointillismProps) {
         vy[count] = 0;
         phase[count] = Math.random() * Math.PI * 2;
         radii[count] = DOT_RADIUS_MIN + Math.random() * (DOT_RADIUS_MAX - DOT_RADIUS_MIN);
-        // ink dots: alpha 0.25–0.45; red: slightly higher 0.45–0.62
+        // ink dots: alpha 0.14–0.24; red: 0.30–0.40
         colorFlag[count] = Math.random() < RED_FRACTION ? 1 : 0;
         alphaBase[count] = colorFlag[count]
-          ? 0.45 + Math.random() * 0.17
-          : 0.25 + Math.random() * 0.20;
+          ? 0.30 + Math.random() * 0.10
+          : 0.14 + Math.random() * 0.10;
 
-        // entrance scatter: organic, driven by phase (not row order)
+        // entrance scatter: organic, driven by phase (not row order) — quieter arrival
         const scatterAngle = Math.random() * Math.PI * 2;
-        const scatterDist = 18 + Math.random() * 32;
+        const scatterDist = 8 + Math.random() * 16;
         scatterX[count] = Math.cos(scatterAngle) * scatterDist;
         scatterY[count] = Math.sin(scatterAngle) * scatterDist;
         // stagger by noise * ENTRANCE_DURATION so organic, not row-based
@@ -257,7 +260,7 @@ export default function HeroPointillism({ heroOpacity }: HeroPointillismProps) {
           const dist = Math.sqrt(distSq);
           const strength = 1 - dist / REPEL_RADIUS;
           // smooth falloff: strength² × 14 px max push per frame
-          const push = strength * strength * 14;
+          const push = strength * strength * 8;
           vx[i] += (rx / dist) * push;
           vy[i] += (ry / dist) * push;
         }
