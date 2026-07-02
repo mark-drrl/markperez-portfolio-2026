@@ -7,6 +7,8 @@ import {
   computeColumnTranslateVh,
   workColumns,
 } from "@/lib/workColumnLayout";
+import { preloadCaseStudyRoute } from "@/lib/caseStudyPreload";
+import { isWorkDetailPath } from "@/lib/routeMode";
 import { type MotionValue, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
 import { type ReactNode, useCallback, useEffect, useRef } from "react";
@@ -30,6 +32,16 @@ function WorkImageLink({
   linksEnabled: boolean;
 }) {
   const href = getWorkGalleryHref(src);
+  const warmedRef = useRef(false);
+
+  const handlePointerEnter = useCallback(() => {
+    if (!href || warmedRef.current || !isWorkDetailPath(href)) {
+      return;
+    }
+
+    warmedRef.current = true;
+    void preloadCaseStudyRoute(href);
+  }, [href]);
 
   if (linksEnabled && href) {
     return (
@@ -38,6 +50,7 @@ function WorkImageLink({
         prefetch={false}
         className="block h-full w-full"
         data-work-gallery-link
+        onPointerEnter={handlePointerEnter}
       >
         {children}
       </Link>

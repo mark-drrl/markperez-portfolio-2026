@@ -23,6 +23,8 @@ import {
   resetHomeScrollPosition,
   unregisterWorkScrollMotionValues,
 } from "@/lib/workScrollBridge";
+import { preloadCaseStudyRoute } from "@/lib/caseStudyPreload";
+import { isWorkDetailPath } from "@/lib/routeMode";
 import Link from "next/link";
 import { motion, type MotionValue, useMotionValue } from "framer-motion";
 import {
@@ -52,10 +54,26 @@ function getWorkHref(src: string) {
 
 function WorkImageLink({ src, children }: { src: string; children: ReactNode }) {
   const href = getWorkHref(src);
+  const warmedRef = useRef(false);
+
+  const handlePointerEnter = useCallback(() => {
+    if (!href || warmedRef.current || !isWorkDetailPath(href)) {
+      return;
+    }
+
+    warmedRef.current = true;
+    void preloadCaseStudyRoute(href);
+  }, [href]);
 
   if (href) {
     return (
-      <Link href={href} prefetch={false} className="block h-full w-full" data-no-magnetic>
+      <Link
+        href={href}
+        prefetch={false}
+        className="block h-full w-full"
+        data-no-magnetic
+        onPointerEnter={handlePointerEnter}
+      >
         {children}
       </Link>
     );

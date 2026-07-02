@@ -1,5 +1,6 @@
 "use client";
 
+import { preloadCaseStudyRoute } from "@/lib/caseStudyPreload";
 import { requestHomeScrollTop, requestHomeScrollWorks } from "@/lib/homeScroll";
 import { isHomePath, isWorkDetailPath } from "@/lib/routeMode";
 import { AnimatePresence, motion } from "framer-motion";
@@ -37,12 +38,32 @@ export default function PageLoader() {
   const initialLoaderPlayedRef = useRef(skipInitialLoader);
   const frameRef = useRef(0);
 
-  function playLoader(onComplete?: () => void, hideAfterComplete = true) {
+  function playLoader(
+    onComplete?: () => void,
+    hideAfterComplete = true,
+    destinationPath?: string,
+  ) {
     window.cancelAnimationFrame(frameRef.current);
     setIsVisible(true);
     setProgress(0);
 
+    const preloadPromise =
+      destinationPath && isWorkDetailPath(destinationPath)
+        ? preloadCaseStudyRoute(destinationPath)
+        : Promise.resolve();
+
     const startTime = performance.now();
+
+    function finishLoader() {
+      preloadPromise.finally(() => {
+        window.setTimeout(() => {
+          onComplete?.();
+          if (hideAfterComplete) {
+            setIsVisible(false);
+          }
+        }, 180);
+      });
+    }
 
     function render(time: number) {
       const elapsed = time - startTime;
@@ -58,12 +79,7 @@ export default function PageLoader() {
       }
 
       setProgress(100);
-      window.setTimeout(() => {
-        onComplete?.();
-        if (hideAfterComplete) {
-          setIsVisible(false);
-        }
-      }, 180);
+      finishLoader();
     }
 
     frameRef.current = window.requestAnimationFrame(render);
@@ -91,10 +107,12 @@ export default function PageLoader() {
       return;
     }
 
+    const dismissDelay = isWorkDetailPath(pathname) ? 560 : 420;
+
     const timeoutId = window.setTimeout(() => {
       setIsVisible(false);
       isTransitioningRef.current = false;
-    }, 420);
+    }, dismissDelay);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -140,9 +158,13 @@ export default function PageLoader() {
         }
       }
 
-      playLoader(() => {
-        router.push(nextUrl);
-      }, false);
+      playLoader(
+        () => {
+          router.push(nextUrl);
+        },
+        false,
+        anchor.pathname,
+      );
     }
 
     document.addEventListener("click", handleDocumentClick, { capture: true });
