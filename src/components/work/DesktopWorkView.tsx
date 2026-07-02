@@ -3,6 +3,7 @@
 import WorkColumnGallery from "@/components/WorkColumnGallery";
 import MarkPerezBrand from "@/components/MarkPerezBrand";
 import WorkSocialLinks from "@/components/WorkSocialLinks";
+import Link from "next/link";
 import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import {
@@ -253,6 +254,18 @@ export default function DesktopWorkView({
           >
             BACK TO HOME
           </button>
+          {/* CTA — bottom-center, clear of back-to-home (left) and works heading (right) */}
+          <div className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-center">
+            <p className="font-neue text-[10px] font-semibold tracking-[0.15em] text-[#9F1F2E]">
+              OPEN FOR WORK
+            </p>
+            <Link
+              href="/contact"
+              className="font-neue text-[10px] font-semibold tracking-[0.15em] text-white transition-colors hover:text-[#9F1F2E]"
+            >
+              GET IN TOUCH →
+            </Link>
+          </div>
           <div className="text-right">
             <p className="font-editorial text-5xl leading-none tracking-[-0.02em] text-[#9F1F2E]">
               works

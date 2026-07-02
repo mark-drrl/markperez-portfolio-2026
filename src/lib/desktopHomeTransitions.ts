@@ -7,6 +7,14 @@ import {
   desktopWorkHandoffFrostBlurPx,
 } from "@/lib/curateFrostedBlur";
 
+// ---------------------------------------------------------------------------
+// Reduced-motion: collapses all translate curves to 0 (fades only).
+// Evaluated once at module load — safe because React hydrates client-side.
+// ---------------------------------------------------------------------------
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /** Keep in sync with `WORK_ENTER_PROGRESS` in `desktopWorkScroll.ts`. */
 export const DESKTOP_WORK_ENTER_PROGRESS = 0.64;
 
@@ -424,3 +432,99 @@ export function desktopGalleryVisualCoverage(progress: number) {
 
 export const DESKTOP_CURATE_TEXT_FADE_START = DESKTOP_CURATE_TEXT_EXIT_START;
 export const DESKTOP_CURATE_TEXT_FADE_END = DESKTOP_CURATE_TEXT_EXIT_END;
+
+// ---------------------------------------------------------------------------
+// Translate-Y curves — primary motion for section transitions.
+// Outgoing sections travel up (~-12vh), incoming rise from below (~+14vh → 0).
+// All return 0 when prefers-reduced-motion is set.
+// ---------------------------------------------------------------------------
+
+/**
+ * Convey: enters rising from below (Hero→Convey window 0.004–0.052),
+ * exits by translating up (Convey→Create window 0.14–0.195).
+ * Returns vh value (number of viewport-height units).
+ */
+export function desktopConveyTranslateVh(progress: number): number {
+  if (prefersReducedMotion) return 0;
+
+  // Entrance: +14vh → 0 as Convey rises in
+  if (progress < 0.004) return 14;
+  if (progress < 0.052) return linearMap(progress, 0.004, 0.052, 14, 0);
+
+  // Hold at 0 while fully visible
+  if (progress < 0.13) return 0;
+
+  // Exit: 0 → -12vh as Convey sweeps up
+  if (progress < 0.195) return linearMap(progress, 0.13, 0.195, 0, -12);
+
+  return -12;
+}
+
+/**
+ * Create: enters rising from below (Convey→Create window 0.14–0.18),
+ * exits by translating up (Create→Curate window 0.45–0.58).
+ */
+export function desktopCreateTranslateVh(progress: number): number {
+  if (prefersReducedMotion) return 0;
+
+  // Entrance: +14vh → 0
+  if (progress < 0.13) return 14;
+  if (progress < 0.195) return linearMap(progress, 0.13, 0.195, 14, 0);
+
+  // Hold at 0 while fully visible
+  if (progress < 0.44) return 0;
+
+  // Exit: 0 → -12vh
+  if (progress < 0.58) return linearMap(progress, 0.44, 0.58, 0, -12);
+
+  return -12;
+}
+
+/**
+ * Curate: enters rising from below (Create→Curate window 0.34–0.42),
+ * exits by fading into Work handoff (no translate needed — the Work layer covers it).
+ */
+export function desktopCurateTranslateVh(progress: number): number {
+  if (prefersReducedMotion) return 0;
+
+  // Entrance: +14vh → 0
+  if (progress < 0.32) return 14;
+  if (progress < 0.42) return linearMap(progress, 0.32, 0.42, 14, 0);
+
+  return 0;
+}
+
+/**
+ * Quiet-beat line opacity (Curate→Work overlap, ~58–64% progress).
+ * Peaks at ~0.61 scroll progress, gone before Work locks.
+ */
+export function desktopQuietBeatOpacity(progress: number): number {
+  // Must reach 0 before the work bridge locks scroll at 0.64, or the line
+  // lingers over the gallery while progress is pinned at the lock point.
+  if (progress < 0.575) return 0;
+  if (progress < 0.6) return linearMap(progress, 0.575, 0.6, 0, 1);
+  if (progress < 0.615) return 1;
+  if (progress < 0.635) return linearMap(progress, 0.615, 0.635, 1, 0);
+  return 0;
+}
+
+/**
+ * Red thread draw progress (0 = no line, 1 = fully drawn).
+ * Draws 0→1 from scroll 0 to 0.62, then fades opacity separately.
+ */
+export function desktopRedThreadDrawProgress(progress: number): number {
+  if (progress <= 0) return 0;
+  if (progress >= 0.62) return 1;
+  return progress / 0.62;
+}
+
+/**
+ * Red thread opacity: visible from scroll ~2% onwards, fades out 62–66%.
+ */
+export function desktopRedThreadOpacity(progress: number): number {
+  if (prefersReducedMotion) return 0.35; // Fully drawn, low opacity
+  if (progress < 0.02) return linearMap(progress, 0, 0.02, 0, 0.65);
+  if (progress < 0.62) return 0.65;
+  if (progress < 0.66) return linearMap(progress, 0.62, 0.66, 0.65, 0);
+  return 0;
+}
