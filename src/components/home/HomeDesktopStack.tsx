@@ -4,11 +4,16 @@ import Convey from "@/components/Convey";
 import Create from "@/components/Create";
 import Curate from "@/components/Curate";
 import Hero from "@/components/Hero";
+import RedThread from "@/components/home/RedThread";
 import Work from "@/components/work";
 import {
   blurPxToFilter,
   desktopCreateCurateGlassOpacity,
   desktopCreateExitBlurPx,
+  desktopConveyTranslateVh,
+  desktopCreateTranslateVh,
+  desktopCurateTranslateVh,
+  desktopQuietBeatOpacity,
   DESKTOP_CURATE_WORK_HANDOFF_START,
   desktopCurateEntranceBlurPx,
   desktopCurateLayerOpacity,
@@ -19,8 +24,19 @@ import {
   desktopHeroOpacity,
 } from "@/lib/mobileHomeOpacity";
 import { WORK_ENTER_PROGRESS } from "@/lib/workScrollBridge";
-import { motion, type MotionValue, useTransform } from "framer-motion";
+import {
+  motion,
+  type MotionValue,
+  useTransform,
+  useVelocity,
+  useSpring,
+} from "framer-motion";
 import type { CSSProperties } from "react";
+
+// Reduced-motion: disable velocity skew
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 interface HomeDesktopStackProps {
   scrollYProgress: MotionValue<number>;
@@ -102,6 +118,37 @@ export default function HomeDesktopStack({
     blurPxToFilter(desktopCurateEntranceBlurPx(progress)),
   );
 
+  // --- Translate-Y curves (WS1) ---
+  const conveyTranslateY = useTransform(
+    scrollYProgress,
+    (p) => `${desktopConveyTranslateVh(p)}vh`,
+  );
+  const createTranslateY = useTransform(
+    scrollYProgress,
+    (p) => `${desktopCreateTranslateVh(p)}vh`,
+  );
+  const curateTranslateY = useTransform(
+    scrollYProgress,
+    (p) => `${desktopCurateTranslateVh(p)}vh`,
+  );
+
+  // --- Quiet beat opacity (WS4) ---
+  const quietBeatOpacity = useTransform(scrollYProgress, desktopQuietBeatOpacity);
+
+  // --- Velocity skew (WS3) ---
+  const scrollVelocity = useVelocity(scrollYProgress);
+  const smoothVelocity = useSpring(scrollVelocity, {
+    damping: 50,
+    stiffness: 400,
+    mass: 0.3,
+  });
+  const sectionSkewY = useTransform(smoothVelocity, (v) => {
+    if (prefersReducedMotion) return "skewY(0deg)";
+    // Clamp to ±0.8deg
+    const deg = Math.min(0.8, Math.max(-0.8, v * 0.006));
+    return `skewY(${deg.toFixed(3)}deg)`;
+  });
+
   const conveyPointerEvents = useTransform(
     conveyOpacity,
     (opacity): CSSProperties["pointerEvents"] =>
@@ -146,62 +193,105 @@ export default function HomeDesktopStack({
 
   return (
     <div className="hidden md:contents">
-      <motion.div className="absolute inset-0 z-10 h-screen w-full">
-        <Hero
-          opacity={heroOpacity}
-          blur={heroBlur}
-          visibility={heroVisibility}
-          pointerEvents={heroPointerEvents}
-          isVideoActive
-        />
-      </motion.div>
+      {/* Section layer wrapper — receives velocity skew. Does NOT wrap fixed chrome. */}
       <motion.div
-        className="pointer-events-none absolute inset-0 z-20 h-screen w-full"
-        style={{
-          WebkitMaskImage: conveyRevealMask,
-          maskImage: conveyRevealMask,
-        }}
+        className="absolute inset-0 z-10 h-screen w-full"
+        style={{ transform: sectionSkewY }}
       >
-        <Convey
-          entranceOpacity={conveyOpacity}
-          entranceBlur={conveyBlur}
-          pointerEvents={conveyPointerEvents}
-          scrollYProgress={scrollYProgress}
+        {/* Hero */}
+        <div className="absolute inset-0 h-full w-full">
+          <Hero
+            opacity={heroOpacity}
+            blur={heroBlur}
+            visibility={heroVisibility}
+            pointerEvents={heroPointerEvents}
+            isVideoActive
+          />
+        </div>
+
+        {/* Convey */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 h-full w-full"
+          style={{
+            WebkitMaskImage: conveyRevealMask,
+            maskImage: conveyRevealMask,
+            y: conveyTranslateY,
+          }}
+        >
+          <Convey
+            entranceOpacity={conveyOpacity}
+            entranceBlur={conveyBlur}
+            pointerEvents={conveyPointerEvents}
+            scrollYProgress={scrollYProgress}
+          />
+        </motion.div>
+
+        {/* Hero→Convey glass sweep */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[15] bg-[#EAEAEA]/35 backdrop-blur-[72px]"
+          style={{
+            opacity: glassSweepOpacity,
+            WebkitMaskImage: glassSweepMask,
+            maskImage: glassSweepMask,
+          }}
+          aria-hidden="true"
         />
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[25] bg-[#EAEAEA]/35 backdrop-blur-[72px]"
-        style={{
-          opacity: glassSweepOpacity,
-          WebkitMaskImage: glassSweepMask,
-          maskImage: glassSweepMask,
-        }}
-        aria-hidden="true"
-      />
-      <motion.div className="pointer-events-none absolute inset-0 z-30 h-screen w-full">
-        <Create
-          entranceOpacity={createOpacity}
-          entranceBlur={createBlur}
-          pointerEvents={createPointerEvents}
-          scrollYProgress={scrollYProgress}
+
+        {/* Create */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-20 h-full w-full"
+          style={{ y: createTranslateY }}
+        >
+          <Create
+            entranceOpacity={createOpacity}
+            entranceBlur={createBlur}
+            pointerEvents={createPointerEvents}
+            scrollYProgress={scrollYProgress}
+          />
+        </motion.div>
+
+        {/* Create→Curate glass */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[25] h-full w-full bg-[#EAEAEA]/28 backdrop-blur-[48px]"
+          style={{ opacity: createCurateGlassOpacity }}
+          aria-hidden="true"
         />
-      </motion.div>
-      <motion.div
-        className="pointer-events-none absolute inset-0 z-[35] h-screen w-full bg-[#EAEAEA]/28 backdrop-blur-[48px]"
-        style={{ opacity: createCurateGlassOpacity }}
-        aria-hidden="true"
-      />
-      <motion.div className="pointer-events-none absolute inset-0 z-40 h-screen w-full">
-        <Curate
-          opacity={curateOpacity}
-          blur={curateBlur}
-          pointerEvents={curatePointerEvents}
-          visibility={curateVisibility}
-          scrollYProgress={scrollYProgress}
-        />
-      </motion.div>
-      <motion.div className="pointer-events-none absolute inset-0 z-[45] h-screen w-full">
-        <Work scrollYProgress={scrollYProgress} pointerEvents={workPointerEvents} />
+
+        {/* Red thread — sits above Create glass, below Curate content (z-[27]) */}
+        <RedThread scrollYProgress={scrollYProgress} />
+
+        {/* Curate */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-30 h-full w-full"
+          style={{ y: curateTranslateY }}
+        >
+          <Curate
+            opacity={curateOpacity}
+            blur={curateBlur}
+            pointerEvents={curatePointerEvents}
+            visibility={curateVisibility}
+            scrollYProgress={scrollYProgress}
+          />
+        </motion.div>
+
+        {/* Quiet beat — Curate→Work overlap (WS4). z-[32] so it sits above Curate bg. */}
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-[36] flex items-center justify-center"
+          style={{ opacity: quietBeatOpacity }}
+          aria-hidden="true"
+        >
+          <p
+            className="font-editorial text-center italic text-[#1a1a18]"
+            style={{ fontSize: "clamp(20px, 1.8vw, 30px)" }}
+          >
+            Direction at every step.
+          </p>
+        </motion.div>
+
+        {/* Work — pointer-events managed internally by DesktopWorkView via workPointerEvents */}
+        <div className="absolute inset-0 z-[35] h-full w-full">
+          <Work scrollYProgress={scrollYProgress} pointerEvents={workPointerEvents} />
+        </div>
       </motion.div>
     </div>
   );
