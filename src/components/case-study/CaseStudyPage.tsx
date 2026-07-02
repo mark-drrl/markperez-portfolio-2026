@@ -9,6 +9,7 @@ import CaseStudyNarrative from "./CaseStudyNarrative";
 import CaseStudyOverview from "./CaseStudyOverview";
 import CaseStudyProcess from "./CaseStudyProcess";
 import CaseStudyReels from "./CaseStudyReels";
+import CaseStudyResults from "./CaseStudyResults";
 import CaseStudyShell from "./CaseStudyShell";
 import CaseStudyOutro from "./CaseStudyOutro";
 
@@ -25,6 +26,7 @@ export default function CaseStudyPage({ content }: CaseStudyPageProps) {
         <CaseStudyNarrative content={content} />
         <CaseStudyFullBleed image={content.fullBleed} />
         <CaseStudyProcess content={content} />
+        {content.results ? <CaseStudyResults content={content} /> : null}
         {content.film ? <CaseStudyFilm content={content} /> : null}
         {content.reels ? <CaseStudyReels reels={content.reels} /> : null}
         {content.gallery.items.length > 0 ? (

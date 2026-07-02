@@ -59,6 +59,19 @@ export type CaseStudyDocuments = {
   items: readonly CaseStudyDocument[];
 };
 
+export type CaseStudyStat = {
+  value: string;
+  label: string;
+  description?: string;
+};
+
+export type CaseStudyResults = {
+  label: string;
+  heading: string;
+  intro?: string;
+  stats: CaseStudyStat[];
+};
+
 export interface CaseStudyContent {
   slug: string;
   index: string;
@@ -89,6 +102,7 @@ export interface CaseStudyContent {
   };
   film?: CaseStudyFilm;
   reels?: CaseStudyReels;
+  results?: CaseStudyResults;
   documents?: CaseStudyDocuments;
   gallery: {
     label: string;

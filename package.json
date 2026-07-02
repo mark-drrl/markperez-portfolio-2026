@@ -10,7 +10,8 @@
     "optimize:curate": "node scripts/optimize-curate.mjs",
     "debug:transitions": "tsx scripts/log-transition-opacity.ts",
     "debug:curate-work": "node scripts/debug-curate-work-scroll.mjs",
-    "generate:lsb-pdf": "node scripts/generate-lsb-pdf-previews.mjs"
+    "generate:lsb-pdf": "node scripts/generate-lsb-pdf-previews.mjs",
+    "generate:og": "node scripts/generate-og-images.mjs"
   },
   "dependencies": {
     "@vercel/analytics": "^2.0.1",
