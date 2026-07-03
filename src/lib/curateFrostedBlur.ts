@@ -3,11 +3,11 @@
  * Timing constants mirror `desktopHomeTransitions.ts`.
  */
 
-/** Matches Figma Curate BLUR layer (node 15:52). */
-export const DESKTOP_CURATE_FROST_BLUR_PX = 16.45;
+/** Matches Figma Curate BLUR layer (node 15:52). Halved so filled cells reveal readable images. */
+export const DESKTOP_CURATE_FROST_BLUR_PX = 8.2;
 
-/** Fine grain overlay strength while frosted. */
-export const DESKTOP_CURATE_FROST_GRAIN_OPACITY = 0.5;
+/** Fine grain overlay strength while frosted. Reduced from 0.5 to keep character without wash. */
+export const DESKTOP_CURATE_FROST_GRAIN_OPACITY = 0.3;
 
 const CURATE_WORK_HANDOFF_START = 0.58;
 const CURATE_WORK_UNBLUR_END = 0.72;

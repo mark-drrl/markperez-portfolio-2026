@@ -477,18 +477,19 @@ export default function Curate({
   );
   const desktopBlurOverlayOpacity = useTransform(scrollYProgress, (latest) => {
     // Frosted background is present throughout Curate: it ramps in with the
-    // grey boxes, holds at full strength while the images fill in one by one,
+    // grey boxes, holds at ~50% strength while the images fill in one by one
+    // (reduced from 1.0 so filled cells show clearly readable images),
     // then fades out as the Work gallery takes over.
     if (latest < 0.34) {
       return 0;
     }
 
     if (latest < 0.4) {
-      return (latest - 0.34) / 0.06;
+      return ((latest - 0.34) / 0.06) * 0.5;
     }
 
     if (latest < DESKTOP_CURATE_WORK_HANDOFF_START) {
-      return 1;
+      return 0.5;
     }
 
     if (latest >= DESKTOP_CURATE_WORK_HANDOFF_END) {
@@ -496,9 +497,10 @@ export default function Curate({
     }
 
     return (
-      1 -
-      (latest - DESKTOP_CURATE_WORK_HANDOFF_START) /
-        (DESKTOP_CURATE_WORK_HANDOFF_END - DESKTOP_CURATE_WORK_HANDOFF_START)
+      0.5 *
+      (1 -
+        (latest - DESKTOP_CURATE_WORK_HANDOFF_START) /
+          (DESKTOP_CURATE_WORK_HANDOFF_END - DESKTOP_CURATE_WORK_HANDOFF_START))
     );
   });
   return (
