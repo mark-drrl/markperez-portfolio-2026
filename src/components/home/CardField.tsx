@@ -6,10 +6,15 @@
  * Stage B: past 0.62 the virtual-scroll offset from workScrollBridge drives additional
  *          card travel, turning the field into the works gallery (no separate 3-col gallery).
  *
- * z-[31] = FAR cards (behind title)
- * z-[32] = title layer
- * z-[33] = RedThread (not rendered here)
- * z-[34] = NEAR cards (in front of title)
+ * z-layer structure (Bug 3 fix — thread weaving):
+ *   z-[30] = FAR cards  (behind title)
+ *   z-[31] = title layer (above far, below mid+near)
+ *   z-[32] = MID cards  (shallowest near slots d=1.05–1.15; behind thread)
+ *   z-[33] = RedThread  (not rendered here)
+ *   z-[34] = NEAR cards (deepest near slots d=1.25–1.40; in front of thread)
+ *
+ * Bug 1 fix: gradient card raised to z-[35] during push-out so field cards
+ *   emerge from behind it; lowered back to z-[29] once faded.
  */
 
 import { workGalleryImages, workGallerySrcSet } from "@/constants/workGalleryImages";
@@ -35,49 +40,56 @@ type SlotDef = {
   wVw: number;
   /** aspect ratio [w, h] */
   aspect: [number, number];
-  /** visual layer */
-  layer: "far" | "near";
+  /**
+   * visual layer:
+   *  "far"  → z-[30] (behind title)
+   *  "mid"  → z-[32] (behind thread, above title) — shallowest near slots
+   *  "near" → z-[34] (in front of thread)          — deepest near slots
+   */
+  layer: "far" | "mid" | "near";
 };
 
 const SLOT_DEFS: SlotDef[] = [
-  // FAR layer
+  // FAR layer — z-[30]
   { imageIndex: 0,  xVw: 8,  d: 0.60, wVw: 10, aspect: [4, 5], layer: "far" },
   { imageIndex: 1,  xVw: 30, d: 0.70, wVw: 12, aspect: [3, 2], layer: "far" },
   { imageIndex: 2,  xVw: 55, d: 0.65, wVw: 10, aspect: [1, 1], layer: "far" },
   { imageIndex: 3,  xVw: 78, d: 0.70, wVw: 11, aspect: [4, 5], layer: "far" },
   { imageIndex: 4,  xVw: 18, d: 0.80, wVw: 13, aspect: [3, 2], layer: "far" },
   { imageIndex: 5,  xVw: 68, d: 0.85, wVw: 13, aspect: [4, 5], layer: "far" },
-  // NEAR layer
-  { imageIndex: 6,  xVw: 4,  d: 1.05, wVw: 20, aspect: [4, 5], layer: "near" },
-  { imageIndex: 7,  xVw: 36, d: 1.15, wVw: 22, aspect: [3, 2], layer: "near" },
-  { imageIndex: 8,  xVw: 66, d: 1.10, wVw: 21, aspect: [4, 5], layer: "near" },
-  { imageIndex: 9,  xVw: 14, d: 1.30, wVw: 24, aspect: [3, 2], layer: "near" },
-  { imageIndex: 10, xVw: 48, d: 1.25, wVw: 23, aspect: [4, 5], layer: "near" },
-  { imageIndex: 8,  xVw: 74, d: 1.40, wVw: 22, aspect: [1, 1], layer: "near" }, // s11 repeats img 8
-  { imageIndex: 3,  xVw: 28, d: 1.35, wVw: 24, aspect: [4, 5], layer: "near" }, // s12 repeats img 3
-  { imageIndex: 1,  xVw: 58, d: 1.40, wVw: 25, aspect: [3, 2], layer: "near" }, // s13 repeats img 1
+  // MID layer (shallowest near, d=1.05–1.15) — z-[32], BEHIND thread z-[33]
+  { imageIndex: 6,  xVw: 4,  d: 1.05, wVw: 20, aspect: [4, 5], layer: "mid" },  // s6
+  { imageIndex: 7,  xVw: 36, d: 1.15, wVw: 21, aspect: [3, 2], layer: "mid" },  // s7 — width trimmed
+  { imageIndex: 8,  xVw: 66, d: 1.10, wVw: 20, aspect: [4, 5], layer: "mid" },  // s8 — width trimmed
+  // NEAR layer (deeper near, d=1.25–1.40) — z-[34], IN FRONT of thread z-[33]
+  { imageIndex: 9,  xVw: 14, d: 1.30, wVw: 21, aspect: [3, 2], layer: "near" }, // s9  — width trimmed
+  { imageIndex: 10, xVw: 48, d: 1.25, wVw: 20, aspect: [4, 5], layer: "near" }, // s10 — width trimmed
+  { imageIndex: 8,  xVw: 74, d: 1.40, wVw: 20, aspect: [1, 1], layer: "near" }, // s11 repeats img 8, trimmed
+  { imageIndex: 3,  xVw: 28, d: 1.35, wVw: 21, aspect: [4, 5], layer: "near" }, // s12 repeats img 3, trimmed
+  { imageIndex: 1,  xVw: 58, d: 1.40, wVw: 21, aspect: [3, 2], layer: "near" }, // s13 repeats img 1, trimmed
 ];
 
-// Baseline slot Y positions (at p=0.20) — distribute between -5vh and 95vh
-// so the field looks scattered across viewport at travel start.
-// Slots are ordered by their visual depth to give a natural scattered look.
+// Baseline slot Y positions (at p=0.20) — distribute between -5vh and 95vh.
+// Bug 2a fix: increased vertical gaps so same-column cards don't overlap.
+// Near slots in particular given more vertical breathing room.
 const SLOT_BASE_Y_VH: number[] = [
   // FAR slots (s0–s5)
   -4,   // s0 x8
   42,   // s1 x30
   15,   // s2 x55
-  70,   // s3 x78
+  72,   // s3 x78  — spread out more
   -1,   // s4 x18
-  58,   // s5 x68
-  // NEAR slots (s6–s13)
-  25,   // s6 x4
-  -5,   // s7 x36
-  80,   // s8 x66
-  55,   // s9 x14
-  95,   // s10 x48
-  10,   // s11 x74
-  38,   // s12 x28
-  68,   // s13 x58
+  60,   // s5 x68
+  // MID slots (s6–s8, now "mid" layer)
+  30,   // s6 x4
+  -8,   // s7 x36  — pushed higher (off-screen top at start)
+  88,   // s8 x66  — pushed lower
+  // NEAR slots (s9–s13)
+  50,   // s9 x14
+ 100,   // s10 x48 — pushed even lower
+  8,    // s11 x74
+  70,   // s12 x28
+  -12,  // s13 x58 — above viewport at start, comes in early
 ];
 
 // ---------------------------------------------------------------------------
@@ -164,6 +176,9 @@ function easeOutCubic(t: number) {
  * Returns the fill fraction (0–1) for slot i at scroll progress p.
  * Windows are spread across FILL_START_GLOBAL–FILL_END_GLOBAL,
  * ordered by slot Y baseline (lowest/highest-Y fills first for bottom→top sweep).
+ *
+ * Bug 2b fix: clamp to 1 when p >= FILL_END_GLOBAL so recycled (wrapped)
+ * cards always appear fully filled in works mode.
  */
 function getSlotFillOrder(): number[] {
   // Sort slots by their baseY descending (highest Y = lowest on screen = fills first)
@@ -185,6 +200,8 @@ function slotFillStart(slotIndex: number): number {
 }
 
 function slotFillProgress(slotIndex: number, p: number): number {
+  // Bug 2b fix: once past the fill window, every card is fully filled — including wrapped ones.
+  if (p >= FILL_END_GLOBAL) return 1;
   const start = slotFillStart(slotIndex);
   const end = start + FILL_WINDOW_SPAN;
   return clamp01((p - start) / (end - start));
@@ -210,7 +227,16 @@ const GRAD_CARD_CENTER_Y_VH = (100 - GRAD_CARD_H_VH) / 2; // 23vh top
 
 // ---------------------------------------------------------------------------
 // Per-slot card position at given progress
+// Bug 4 fix: use proper JS-safe positive modulo; ensure cycleSpan > 100+cardHeight;
+//   also guard wrapCount against incrementing while card is on-screen.
 // ---------------------------------------------------------------------------
+
+/**
+ * Safe positive modulo (handles negative dividends correctly in JS).
+ */
+function posMod(n: number, m: number): number {
+  return ((n % m) + m) % m;
+}
 
 function computeSlotY(slotIndex: number, p: number, virtualOffset: number): {
   yVh: number;
@@ -232,19 +258,22 @@ function computeSlotY(slotIndex: number, p: number, virtualOffset: number): {
   const totalTravel = scrollTravel + virtualTravel;
 
   const cardHeightVh = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
-  const cycleSpan = 160 + cardHeightVh;
+  // Bug 4 fix: cycleSpan must exceed viewport (100vh) + card height + generous margin
+  // so the teleport (to cycleSpan - cardHeight below viewport top) is always off-screen.
+  // Minimum effective cycle = 100 + 2*cardHeightVh + 20 margin; use 180 as base.
+  const cycleSpan = Math.max(180, 100 + cardHeightVh * 2 + 20) + cardHeightVh;
 
-  let y = baseY - totalTravel;
+  // Unwrapped y (can be very negative as card travels upward)
+  const yRaw = baseY - totalTravel;
 
-  // Count how many times this card has wrapped (for image assignment)
-  const rawWraps = Math.floor((baseY + cardHeightVh - y) / cycleSpan);
+  // Count how many full cycles the card has completed (for image assignment)
+  // wrapCount = floor((cardHeightVh + totalTravel) / cycleSpan), clamped ≥ 0
+  const rawWraps = Math.floor((cardHeightVh + totalTravel) / cycleSpan);
   const wrapCount = Math.max(0, rawWraps);
 
-  // Wrap: when card top goes above -cardHeightVh, wrap below viewport
-  y = ((y + cardHeightVh) % cycleSpan) - cardHeightVh;
-  if (y < -cardHeightVh) {
-    y += cycleSpan;
-  }
+  // Wrap via positive modulo: maps yRaw into [−cardHeightVh, cycleSpan − cardHeightVh)
+  // so the card is teleported from just-above-top to just-below-bottom.
+  const y = posMod(yRaw + cardHeightVh, cycleSpan) - cardHeightVh;
 
   return { yVh: y, wrapCount };
 }
@@ -272,7 +301,9 @@ function computePushOutScale(slotIndex: number, p: number): number {
   const t = clamp01((p - PUSH_OUT_START) / (PUSH_OUT_END - PUSH_OUT_START));
   const stagger = (slotIndex / SLOT_DEFS.length) * 0.15;
   const staggeredT = clamp01((t - stagger * 0.5) / (1 - stagger * 0.5));
-  return 0.5 + 0.5 * easeOutCubic(staggeredT);
+  // Bug 1 fix: start scale reduced from 0.5 → 0.25 so even wide near-cards
+  // start smaller than the gradient card's 42vw footprint (near cards: 21vw * 0.25 = 5.25vw).
+  return 0.25 + 0.75 * easeOutCubic(staggeredT);
 }
 
 // ---------------------------------------------------------------------------
@@ -292,7 +323,7 @@ function computeCardY(slotIndex: number, p: number, virtualOffset: number): {
 
   // Phase 1 (0.05–0.13): gradient card visible, field cards hidden below viewport
   if (p < PUSH_OUT_START) {
-    return { yVh: 110, scale: 0.5, visible: false, wrapCount: 0 };
+    return { yVh: 110, scale: 0.25, visible: false, wrapCount: 0 };
   }
 
   // Phase 2 (0.13–0.20): push-out — cards expand from gradient card center to slots
@@ -386,10 +417,13 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   const maskRefs = useRef<(HTMLDivElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
   // Refs for the img elements inside each card (for dynamic src swaps on wrap)
   const imgRefs = useRef<(HTMLImageElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
-  // Refs to FAR/NEAR layer containers for pointer-event toggling
+  // Refs to FAR/MID/NEAR layer containers for pointer-event toggling
   const farLayerRef = useRef<HTMLDivElement>(null);
+  const midLayerRef = useRef<HTMLDivElement>(null);
   const nearLayerRef = useRef<HTMLDivElement>(null);
   // Gradient card ref
+  // Bug 1 fix: gradient card wrapper needs a ref so we can imperatively raise/lower its z-index
+  const gradCardWrapperRef = useRef<HTMLDivElement>(null);
   const gradCardRef = useRef<HTMLDivElement>(null);
   const gradCardOpacityRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -456,18 +490,25 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
         maskEl.style.maskImage = maskStyle;
       }
 
-      // Swap image src when wrap count changes (project rotation)
+      // Bug 2c fix: only swap image src when wrap count changes AND the card is off-screen.
+      // A wrap should only occur when yVh places the card completely outside the viewport.
+      // We use ±(cardHeightVh + 5) as the off-screen guard zone.
       if (wrapCount !== lastWrapCountsRef.current[i]) {
-        lastWrapCountsRef.current[i] = wrapCount;
-        const newImgIndex = imageIndexForSlotWrap(i, wrapCount);
-        const newSrc = workGalleryImages[newImgIndex];
-        currentImgSrcsRef.current[i] = newSrc;
-        const imgEl = imgRefs.current[i];
-        if (imgEl) {
-          if (!imgEl.src.endsWith(newSrc)) {
-            imgEl.src = newSrc;
-            const srcSet = workGallerySrcSet(newSrc);
-            if (srcSet) imgEl.srcset = srcSet;
+        const slot = SLOT_DEFS[i];
+        const cardHeightVh = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
+        const isOffScreen = yVh < -(cardHeightVh + 5) || yVh > (100 + 5);
+        if (isOffScreen) {
+          lastWrapCountsRef.current[i] = wrapCount;
+          const newImgIndex = imageIndexForSlotWrap(i, wrapCount);
+          const newSrc = workGalleryImages[newImgIndex];
+          currentImgSrcsRef.current[i] = newSrc;
+          const imgEl = imgRefs.current[i];
+          if (imgEl) {
+            if (!imgEl.src.endsWith(newSrc)) {
+              imgEl.src = newSrc;
+              const srcSet = workGallerySrcSet(newSrc);
+              if (srcSet) imgEl.srcset = srcSet;
+            }
           }
         }
       }
@@ -476,6 +517,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
     // Gradient card
     const gradEl = gradCardRef.current;
     const gradOpacityEl = gradCardOpacityRef.current;
+    const gradWrapperEl = gradCardWrapperRef.current;
     if (gradEl) {
       const yVh = computeGradCardY(p);
       gradEl.style.transform = `translate3d(-50%, ${yVh}vh, 0)`;
@@ -484,6 +526,15 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
       const opacity = computeGradCardOpacity(p);
       gradOpacityEl.style.opacity = String(opacity);
       gradOpacityEl.style.pointerEvents = opacity > 0.01 ? "auto" : "none";
+    }
+    // Bug 1 fix: raise gradient card above near cards (z-[35]) during push-out phase
+    // so field cards emerge from BEHIND it. Once faded, drop back to z-[29] (below far cards).
+    if (gradWrapperEl) {
+      if (p >= PUSH_OUT_START && p < GRAD_CARD_FADE_END) {
+        gradWrapperEl.style.zIndex = "35";
+      } else {
+        gradWrapperEl.style.zIndex = "29";
+      }
     }
 
     // Video play/pause based on gradient card visibility
@@ -581,12 +632,15 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   // override the parent's pointer-events:none in HTML even without inheriting it)
   useEffect(() => {
     const far = farLayerRef.current;
+    const mid = midLayerRef.current;
     const near = nearLayerRef.current;
     if (linksEnabled) {
       far?.removeAttribute("aria-hidden");
+      mid?.removeAttribute("aria-hidden");
       near?.removeAttribute("aria-hidden");
     } else {
       far?.setAttribute("aria-hidden", "true");
+      mid?.setAttribute("aria-hidden", "true");
       near?.setAttribute("aria-hidden", "true");
     }
   }, [linksEnabled]);
@@ -634,8 +688,8 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
 
   return (
     <>
-      {/* FAR card layer — z-[31] (behind title z-[32] and RedThread z-[33]) */}
-      <div ref={farLayerRef} className="pointer-events-none absolute inset-0 z-[31] hidden md:block" aria-hidden="true">
+      {/* FAR card layer — z-[30] (behind title z-[31]) */}
+      <div ref={farLayerRef} className="pointer-events-none absolute inset-0 z-[30] hidden md:block" aria-hidden="true">
         {SLOT_DEFS.map((slot, i) => {
           if (slot.layer !== "far") return null;
           const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
@@ -672,43 +726,50 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
         })}
       </div>
 
-      {/* Gradient card — z-[31] (part of far layer, but rendered separately for choreography) */}
-      {/* This is the special Convey-act card */}
+      {/* Gradient card — z managed imperatively via gradCardWrapperRef.
+          Bug 1 fix: raised to z-[35] during push-out (above all card layers) so
+          field cards emerge from BEHIND the gradient square. Drops to z-[29] once faded. */}
       <div
-        ref={gradCardOpacityRef}
-        className="pointer-events-none absolute inset-0 z-[31] hidden md:block"
-        style={{ opacity: 0 }}
+        ref={gradCardWrapperRef}
+        className="pointer-events-none absolute inset-0 hidden md:block"
+        style={{ zIndex: 29 }}
         aria-hidden="true"
       >
         <div
-          ref={gradCardRef}
-          className="absolute overflow-hidden"
-          style={{
-            width: `${GRAD_CARD_W_VW}vw`,
-            height: `${GRAD_CARD_H_VH}vh`,
-            left: "50%",
-            top: "0",
-            transform: "translate3d(-50%, 115vh, 0)",
-            backgroundColor: "#d0d0d0",
-          }}
+          ref={gradCardOpacityRef}
+          className="pointer-events-none absolute inset-0"
+          style={{ opacity: 0 }}
         >
-          <video
-            ref={videoRef}
-            className="h-[116%] w-full object-cover grayscale contrast-110 brightness-105 opacity-80"
-            src="/GRADIENT.mp4"
-            muted
-            loop
-            playsInline
-            preload="metadata"
-          />
-          <div className="absolute inset-0 bg-[#EAEAEA]/20 mix-blend-screen" />
+          <div
+            ref={gradCardRef}
+            className="absolute overflow-hidden"
+            style={{
+              width: `${GRAD_CARD_W_VW}vw`,
+              height: `${GRAD_CARD_H_VH}vh`,
+              left: "50%",
+              top: "0",
+              transform: "translate3d(-50%, 115vh, 0)",
+              backgroundColor: "#d0d0d0",
+            }}
+          >
+            <video
+              ref={videoRef}
+              className="h-[116%] w-full object-cover grayscale contrast-110 brightness-105 opacity-80"
+              src="/GRADIENT.mp4"
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            />
+            <div className="absolute inset-0 bg-[#EAEAEA]/20 mix-blend-screen" />
+          </div>
         </div>
       </div>
 
-      {/* Title layer — z-[32] */}
+      {/* Title layer — z-[31] (above far cards z-[30], below mid cards z-[32]) */}
       <div
         ref={titleRef}
-        className="pointer-events-none absolute inset-0 z-[32] hidden items-center justify-center md:flex"
+        className="pointer-events-none absolute inset-0 z-[31] hidden items-center justify-center md:flex"
         style={{ opacity: 0 }}
         aria-hidden="true"
       >
@@ -792,7 +853,48 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
         </div>
       </div>
 
-      {/* NEAR card layer — z-[34] (in front of title and RedThread) */}
+      {/* MID card layer — z-[32] (above title z-[31], BEHIND thread z-[33]).
+          Bug 3 fix: shallowest near slots (d=1.05–1.15) moved here so thread
+          visibly passes over them, creating a weaving effect. */}
+      <div ref={midLayerRef} className="pointer-events-none absolute inset-0 z-[32] hidden md:block" aria-hidden="true">
+        {SLOT_DEFS.map((slot, i) => {
+          if (slot.layer !== "mid") return null;
+          const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
+          const tone = curateCellShellTones[i % curateCellShellTones.length];
+          const imgSrc = workGalleryImages[slot.imageIndex];
+
+          return (
+            <div
+              key={`mid-${i}`}
+              ref={(el) => { cardRefs.current[i] = el; }}
+              className="absolute left-0 top-0 will-change-transform overflow-hidden"
+              style={{
+                width: `${slot.wVw}vw`,
+                height: `${heightVw}vw`,
+                left: `${slot.xVw}vw`,
+                transform: `translate3d(0, 110vh, 0)`,
+                opacity: 0,
+                backgroundColor: tone,
+              }}
+            >
+              {/* Image fill — revealed by bottom→top mask */}
+              <div
+                ref={(el) => { maskRefs.current[i] = el; }}
+                className="absolute inset-0 overflow-hidden"
+                style={{
+                  WebkitMaskImage: "linear-gradient(to top, transparent, transparent)",
+                  maskImage: "linear-gradient(to top, transparent, transparent)",
+                }}
+              >
+                {renderCardContent(i, imgSrc, slot.wVw, heightVw, false)}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* NEAR card layer — z-[34] (in front of thread z-[33]).
+          Only the deepest near slots (d=1.25–1.40) are here — they pass over the thread. */}
       <div ref={nearLayerRef} className="pointer-events-none absolute inset-0 z-[34] hidden md:block" aria-hidden="true">
         {SLOT_DEFS.map((slot, i) => {
           if (slot.layer !== "near") return null;

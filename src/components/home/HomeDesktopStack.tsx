@@ -93,10 +93,11 @@ export default function HomeDesktopStack({
           />
         </div>
 
-        {/* CardField — FAR cards at z-[31], title at z-[32], NEAR cards at z-[34] */}
+        {/* CardField — FAR z-[30], title z-[31], MID cards z-[32], NEAR cards z-[34]
+             Gradient card: z-[29] at rest, raised to z-[35] during push-out (Bug 1 fix) */}
         <CardField scrollYProgress={scrollYProgress} />
 
-        {/* Red thread — z-[33], sits between FAR and NEAR card layers */}
+        {/* Red thread — z-[33], sits BETWEEN MID cards (z-[32]) and NEAR cards (z-[34]) */}
         <RedThread scrollYProgress={scrollYProgress} />
 
         {/* Work — z-[35], pointer-events managed internally */}
