@@ -510,11 +510,12 @@ export function desktopQuietBeatOpacity(progress: number): number {
 
 /**
  * Red thread draw progress (0 = no line, 1 = fully drawn).
- * Starts at 0.12 on landing (brand visible in hero), reaches 1.0 at progress 0.62.
- * Formula: 0.12 + 0.88 * min(p/0.62, 1)
+ * At p=0 a short segment is visible hanging into the hero (draw ≈ 0.18),
+ * completing at p ≈ 0.58 (before Curate→Work handoff).
+ * Formula: 0.18 + 0.82 * min(p/0.58, 1)
  */
 export function desktopRedThreadDrawProgress(progress: number): number {
-  return 0.12 + 0.88 * Math.min(progress / 0.62, 1);
+  return 0.18 + 0.82 * Math.min(progress / 0.58, 1);
 }
 
 /**
