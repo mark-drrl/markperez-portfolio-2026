@@ -5,7 +5,6 @@ import HomeMobileStack from "@/components/home/HomeMobileStack";
 import FluidDistortion from "@/components/FluidDistortion";
 import ProceduralGrain from "@/components/ProceduralGrain";
 import { useHomeScrollProgress } from "@/hooks/useHomeScrollProgress";
-import { useFinePointer } from "@/hooks/useFinePointer";
 import { useMobileViewportHeight } from "@/hooks/useMobileViewportHeight";
 import {
   HOME_SCROLL_SYNC_EVENT,
@@ -21,13 +20,9 @@ import { MOBILE_WORK_SCROLL_PROGRESS } from "@/lib/mobileHomeOpacity";
 import Lenis from "lenis";
 import { restoreNativeDocumentScroll } from "@/lib/restoreDocumentScroll";
 import {
-  desktopCreateCurateGlassOpacity,
-  desktopCurateHandoffWashOpacity,
   desktopCurateLayerOpacity,
   desktopCuratePreviewOpacity,
-  desktopGalleryVisualCoverage,
   desktopWorkChromeOpacity,
-  desktopWorkGalleryOpacity,
 } from "@/lib/desktopHomeTransitions";
 import {
   handleWorkLenisVirtualScroll,
@@ -40,8 +35,6 @@ import {
 import {
   AnimatePresence,
   motion,
-  useMotionValue,
-  useSpring,
   useMotionValueEvent,
   useTransform,
 } from "framer-motion";
@@ -78,25 +71,14 @@ function workThresholdForViewport() {
 
 export default function Home() {
   const pathname = usePathname();
-  const isFinePointer = useFinePointer();
   const [isLastPageOpen, setIsLastPageOpen] = useState(false);
-  const [isHoveringClickable, setIsHoveringClickable] = useState(false);
   const [isInWorkSection, setIsInWorkSection] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
   const inWorkRef = useRef(false);
+  // Magnetic element ref — page.tsx still owns the magnetic pull effect for
+  // the home page (which has work-gallery-aware suppression logic). The cursor
+  // DOT visual is owned by SiteCursor in layout.tsx.
   const activeMagneticElementRef = useRef<HTMLElement | null>(null);
-  const cursorX = useMotionValue(-100);
-  const cursorY = useMotionValue(-100);
-  const cursorSpringX = useSpring(cursorX, {
-    damping: 34,
-    stiffness: 180,
-    mass: 0.55,
-  });
-  const cursorSpringY = useSpring(cursorY, {
-    damping: 34,
-    stiffness: 180,
-    mass: 0.55,
-  });
   const scrollYProgress = useHomeScrollProgress(containerRef);
   useMobileViewportHeight(pathname === "/");
 
@@ -285,11 +267,7 @@ export default function Home() {
           progress,
           curateLayer: desktopCurateLayerOpacity(progress),
           curatePreview: desktopCuratePreviewOpacity(progress),
-          handoffWash: desktopCurateHandoffWashOpacity(progress),
-          createCurateGlass: desktopCreateCurateGlassOpacity(progress),
-          workGallery: desktopWorkGalleryOpacity(progress),
           workChrome: desktopWorkChromeOpacity(progress),
-          visualCoverage: desktopGalleryVisualCoverage(progress),
         }),
         scrollToProgress: (progress: number) =>
           scrollHomeToProgress(progress, containerRef.current),
@@ -313,8 +291,13 @@ export default function Home() {
     };
   }, [pathname]);
 
+  // ── Magnetic pull effect (home-only, work-gallery-aware) ──────────────────
+  // The cursor DOT visual lives in SiteCursor (layout.tsx). This effect only
+  // applies the element-level magnetic transform — no cursor positioning here.
   useEffect(() => {
-    if (pathname !== "/" || !isFinePointer) {
+    const isFine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+    if (pathname !== "/" || !isFine) {
       document
         .querySelectorAll<HTMLElement>(
           '[data-cursor-interactive="true"], a[href], button',
@@ -341,9 +324,6 @@ export default function Home() {
     }
 
     function handlePointerMove(event: PointerEvent) {
-      cursorX.set(event.clientX);
-      cursorY.set(event.clientY);
-
       const target = event.target;
       const clickableElement =
         target instanceof Element
@@ -357,7 +337,6 @@ export default function Home() {
             : null;
 
         if (!workGalleryTarget) {
-          setIsHoveringClickable(false);
           resetMagneticElement();
           return;
         }
@@ -368,12 +347,9 @@ export default function Home() {
         (clickableElement.closest("[data-no-magnetic]") &&
           !clickableElement.closest("[data-work-gallery-link]"))
       ) {
-        setIsHoveringClickable(false);
         resetMagneticElement();
         return;
       }
-
-      setIsHoveringClickable(true);
 
       if (activeMagneticElementRef.current !== clickableElement) {
         resetMagneticElement();
@@ -396,7 +372,6 @@ export default function Home() {
     }
 
     function handlePointerLeave() {
-      setIsHoveringClickable(false);
       resetMagneticElement();
     }
 
@@ -408,7 +383,7 @@ export default function Home() {
       window.removeEventListener("pointerleave", handlePointerLeave);
       resetMagneticElement();
     };
-  }, [cursorX, cursorY, isFinePointer, pathname]);
+  }, [pathname]);
 
   return (
     <main
@@ -432,27 +407,6 @@ export default function Home() {
           </>
         ) : null}
       </div>
-      {isFinePointer ? (
-        <motion.div
-          className="pointer-events-none fixed left-0 top-0 z-[15] h-2.5 w-2.5 rounded-full bg-[#9F1F2E]"
-          animate={{
-            backgroundColor: isHoveringClickable
-              ? "rgba(159, 31, 46, 0.45)"
-              : "rgba(159, 31, 46, 1)",
-            filter: isHoveringClickable ? "blur(8px)" : "blur(0px)",
-            opacity: isHoveringClickable ? 0.58 : 1,
-            scale: isHoveringClickable ? 1.65 : 1,
-          }}
-          transition={{ duration: 0.58, ease: [0.16, 1, 0.3, 1] }}
-          style={{
-            x: cursorSpringX,
-            y: cursorSpringY,
-            translateX: "-50%",
-            translateY: "-50%",
-          }}
-          aria-hidden="true"
-        />
-      ) : null}
       <AnimatePresence>
         {isLastPageOpen && (
           <motion.div

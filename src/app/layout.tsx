@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import PageLoader from "@/components/PageLoader";
 import SiteLayoutClient from "@/components/SiteLayoutClient";
+import SiteCursor from "@/components/SiteCursor";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body>
         <SiteLayoutClient>{children}</SiteLayoutClient>
         <PageLoader />
+        <SiteCursor />
         <Analytics />
       </body>
     </html>

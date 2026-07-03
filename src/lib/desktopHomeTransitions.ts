@@ -81,52 +81,6 @@ export function blurPxToFilter(px: number) {
   return px <= 0.35 ? "blur(0px)" : `blur(${px.toFixed(1)}px)`;
 }
 
-export function desktopCreateCurateGlassOpacity(progress: number) {
-  if (progress <= DESKTOP_CREATE_CURATE_BLEND_START) {
-    return 0;
-  }
-
-  if (progress >= DESKTOP_CREATE_CURATE_BLEND_END) {
-    return 0;
-  }
-
-  const peak =
-    (DESKTOP_CREATE_CURATE_BLEND_START + DESKTOP_CREATE_CURATE_BLEND_END) / 2;
-
-  if (progress <= peak) {
-    return linearMap(
-      progress,
-      DESKTOP_CREATE_CURATE_BLEND_START,
-      peak,
-      0,
-      0.55,
-    );
-  }
-
-  return linearMap(progress, peak, DESKTOP_CREATE_CURATE_BLEND_END, 0.55, 0);
-}
-
-export function desktopCreateExitBlurPx(progress: number) {
-  if (progress < 0.48 || progress >= DESKTOP_CREATE_FADE_OUT_END) {
-    return 0;
-  }
-
-  return linearMap(progress, 0.48, DESKTOP_CREATE_FADE_OUT_END, 0, 14);
-}
-
-/** Section blur only while Curate is entering — not during box fill or handoff. */
-export function desktopCurateEntranceBlurPx(progress: number) {
-  if (progress < 0.34) {
-    return 24;
-  }
-
-  if (progress < DESKTOP_CURATE_REVEAL_END) {
-    return linearMap(progress, 0.34, DESKTOP_CURATE_REVEAL_END, 24, 0);
-  }
-
-  return 0;
-}
-
 /** Blurred plate behind the Curate grid while boxes fill. */
 export function desktopCurateAmbienceOpacity(progress: number) {
   if (progress < 0.34) {
@@ -217,75 +171,6 @@ export function desktopCurateGridShellOpacity(progress: number) {
   return 1;
 }
 
-/** Blur on images inside shells only (not the gray boxes). */
-export function desktopCurateCellImageBlurPx(
-  _cellFillAmount: number,
-  scrollProgress?: number,
-) {
-  if (scrollProgress === undefined) {
-    return DESKTOP_CURATE_CELL_BLUR_PX;
-  }
-
-  return desktopCurateFrostBlurPx(scrollProgress);
-}
-
-/** Frost is per-cell — no extra preview wrapper blur (keeps gray shells sharp). */
-export function desktopCuratePreviewGlassBlurPx(_progress: number) {
-  return 0;
-}
-
-/** @deprecated Use desktopCuratePreviewGlassBlurPx */
-export function desktopCurateWorkGlassBlurPx(progress: number) {
-  return desktopCuratePreviewGlassBlurPx(progress);
-}
-
-export function desktopCuratePreviewHandoffBlurPx(progress: number) {
-  return desktopCuratePreviewGlassBlurPx(progress);
-}
-
-export function desktopCuratePreviewLayerBlurPx(progress: number) {
-  if (progress < 0.33 || progress >= DESKTOP_CURATE_WORK_HANDOFF_START) {
-    return 0;
-  }
-
-  if (progress < DESKTOP_CURATE_REVEAL_END) {
-    return 10;
-  }
-
-  if (progress < DESKTOP_CREATE_CURATE_BLEND_START) {
-    return 6;
-  }
-
-  return linearMap(
-    progress,
-    DESKTOP_CREATE_CURATE_BLEND_START,
-    DESKTOP_CURATE_TEXT_EXIT_START,
-    6,
-    0,
-  );
-}
-
-/** No full-screen wash — crossfade only (prevents white flash). */
-export function desktopCurateHandoffWashOpacity(_progress: number) {
-  return 0;
-}
-
-/** Frosted glass peaks mid handoff — off once Work is locked. */
-export function desktopCurateWorkHandoffGlassOpacity(progress: number) {
-  if (progress < DESKTOP_CURATE_WORK_HANDOFF_START) {
-    return 0;
-  }
-
-  if (progress >= DESKTOP_WORK_ENTER_PROGRESS) {
-    return 0;
-  }
-
-  const span = DESKTOP_WORK_ENTER_PROGRESS - DESKTOP_CURATE_WORK_HANDOFF_START;
-  const t = (progress - DESKTOP_CURATE_WORK_HANDOFF_START) / span;
-
-  return 0.38 * Math.sin(t * Math.PI);
-}
-
 export function desktopCurateTextOpacity(progress: number) {
   if (progress < DESKTOP_CURATE_TEXT_EXIT_START) {
     return 1;
@@ -321,38 +206,6 @@ export function desktopCurateSubtitleOpacity(progress: number) {
   return visible * desktopCurateTextOpacity(progress);
 }
 
-/** Gallery is full strength inside the Work layer; layer opacity handles the crossfade. */
-export function desktopWorkGalleryOpacity(progress: number) {
-  return progress >= DESKTOP_CURATE_WORK_HANDOFF_START ? 1 : 0;
-}
-
-/** Work sharp by scroll lock — no lingering blur on the gallery. */
-export function desktopWorkGalleryHandoffBlurPx(progress: number) {
-  if (progress < DESKTOP_CURATE_WORK_HANDOFF_START) {
-    return 0;
-  }
-
-  if (progress >= DESKTOP_WORK_ENTER_PROGRESS) {
-    return 0;
-  }
-
-  const amount = smoothStep(
-    linearMap(
-      progress,
-      DESKTOP_CURATE_WORK_HANDOFF_START,
-      DESKTOP_WORK_ENTER_PROGRESS,
-      0,
-      1,
-    ),
-  );
-
-  return desktopWorkHandoffFrostBlurPx(progress);
-}
-
-export function desktopGalleryHandoffBlurPx(progress: number) {
-  return desktopWorkGalleryHandoffBlurPx(progress);
-}
-
 export function desktopWorkChromeOpacity(progress: number) {
   if (progress < DESKTOP_WORK_CHROME_START) {
     return 0;
@@ -367,26 +220,6 @@ export function desktopWorkChromeOpacity(progress: number) {
       progress,
       DESKTOP_WORK_CHROME_START,
       DESKTOP_WORK_CHROME_END,
-      0,
-      1,
-    ),
-  );
-}
-
-export function desktopWorkEdgeVignetteOpacity(progress: number) {
-  if (progress < DESKTOP_WORK_EDGE_START) {
-    return 0;
-  }
-
-  if (progress >= DESKTOP_WORK_EDGE_END) {
-    return 1;
-  }
-
-  return smoothStep(
-    linearMap(
-      progress,
-      DESKTOP_WORK_EDGE_START,
-      DESKTOP_WORK_EDGE_END,
       0,
       1,
     ),
@@ -423,98 +256,14 @@ export function desktopWorkBackdropOpacity(progress: number) {
   return desktopWorkLayerOpacity(progress);
 }
 
-export function desktopGalleryVisualCoverage(progress: number) {
-  const preview = desktopCuratePreviewOpacity(progress);
-  const work = desktopWorkLayerOpacity(progress);
-
-  return clamp01(preview + work * (1 - preview));
-}
-
-export const DESKTOP_CURATE_TEXT_FADE_START = DESKTOP_CURATE_TEXT_EXIT_START;
-export const DESKTOP_CURATE_TEXT_FADE_END = DESKTOP_CURATE_TEXT_EXIT_END;
-
-// ---------------------------------------------------------------------------
-// Translate-Y curves — primary motion for section transitions.
-// Outgoing sections travel up (~-12vh), incoming rise from below (~+14vh → 0).
-// All return 0 when prefers-reduced-motion is set.
-// ---------------------------------------------------------------------------
-
-/**
- * Convey: enters rising from below (Hero→Convey window 0.004–0.052),
- * exits by translating up (Convey→Create window 0.14–0.195).
- * Returns vh value (number of viewport-height units).
- */
-export function desktopConveyTranslateVh(progress: number): number {
-  if (prefersReducedMotion) return 0;
-
-  // Entrance: +14vh → 0 as Convey rises in
-  if (progress < 0.004) return 14;
-  if (progress < 0.052) return linearMap(progress, 0.004, 0.052, 14, 0);
-
-  // Hold at 0 while fully visible
-  if (progress < 0.13) return 0;
-
-  // Exit: 0 → -12vh as Convey sweeps up
-  if (progress < 0.195) return linearMap(progress, 0.13, 0.195, 0, -12);
-
-  return -12;
-}
-
-/**
- * Create: enters rising from below (Convey→Create window 0.14–0.18),
- * exits by translating up (Create→Curate window 0.45–0.58).
- */
-export function desktopCreateTranslateVh(progress: number): number {
-  if (prefersReducedMotion) return 0;
-
-  // Entrance: +14vh → 0
-  if (progress < 0.13) return 14;
-  if (progress < 0.195) return linearMap(progress, 0.13, 0.195, 14, 0);
-
-  // Hold at 0 while fully visible
-  if (progress < 0.44) return 0;
-
-  // Exit: 0 → -12vh
-  if (progress < 0.58) return linearMap(progress, 0.44, 0.58, 0, -12);
-
-  return -12;
-}
-
-/**
- * Curate: enters rising from below (Create→Curate window 0.34–0.42),
- * exits by fading into Work handoff (no translate needed — the Work layer covers it).
- */
-export function desktopCurateTranslateVh(progress: number): number {
-  if (prefersReducedMotion) return 0;
-
-  // Entrance: +14vh → 0
-  if (progress < 0.32) return 14;
-  if (progress < 0.42) return linearMap(progress, 0.32, 0.42, 14, 0);
-
-  return 0;
-}
-
-/**
- * Quiet-beat line opacity (Curate→Work overlap, ~58–64% progress).
- * Peaks at ~0.61 scroll progress, gone before Work locks.
- */
-export function desktopQuietBeatOpacity(progress: number): number {
-  // Must reach 0 before the work bridge locks scroll at 0.64, or the line
-  // lingers over the gallery while progress is pinned at the lock point.
-  if (progress < 0.575) return 0;
-  if (progress < 0.6) return linearMap(progress, 0.575, 0.6, 0, 1);
-  if (progress < 0.615) return 1;
-  if (progress < 0.635) return linearMap(progress, 0.615, 0.635, 1, 0);
-  return 0;
-}
-
 /**
  * Red thread draw progress (0 = no line, 1 = fully drawn).
- * Starts at 0.12 on landing (brand visible in hero), reaches 1.0 at progress 0.62.
- * Formula: 0.12 + 0.88 * min(p/0.62, 1)
+ * At p=0 a short segment is visible hanging into the hero (draw ≈ 0.18),
+ * completing at p ≈ 0.58 (before Curate→Work handoff).
+ * Formula: 0.18 + 0.82 * min(p/0.58, 1)
  */
 export function desktopRedThreadDrawProgress(progress: number): number {
-  return 0.12 + 0.88 * Math.min(progress / 0.62, 1);
+  return 0.18 + 0.82 * Math.min(progress / 0.58, 1);
 }
 
 /**

@@ -35,6 +35,13 @@ body {
   font-family: "PP Neue Montreal", "PPNeueMontreal", "Neue Montreal", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
 }
 
+/* Hide native cursor on mouse-capable devices — replaced by SiteCursor */
+@media (hover: hover) and (pointer: fine) {
+  html, body, a, button, [role="button"], input, textarea, select, label {
+    cursor: none !important;
+  }
+}
+
 /* Hide scrollbar for a cleaner look */
 ::-webkit-scrollbar {
   display: none;
