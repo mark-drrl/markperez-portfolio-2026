@@ -510,21 +510,21 @@ export function desktopQuietBeatOpacity(progress: number): number {
 
 /**
  * Red thread draw progress (0 = no line, 1 = fully drawn).
- * Draws 0→1 from scroll 0 to 0.62, then fades opacity separately.
+ * Starts at 0.12 on landing (brand visible in hero), reaches 1.0 at progress 0.62.
+ * Formula: 0.12 + 0.88 * min(p/0.62, 1)
  */
 export function desktopRedThreadDrawProgress(progress: number): number {
-  if (progress <= 0) return 0;
-  if (progress >= 0.62) return 1;
-  return progress / 0.62;
+  return 0.12 + 0.88 * Math.min(progress / 0.62, 1);
 }
 
 /**
- * Red thread opacity: visible from scroll ~2% onwards, fades out 62–66%.
+ * Red thread opacity: visible from progress 0 at 0.65 (no fade-in delay);
+ * at 0.62–0.66 eases down to 0.45 and holds at 0.45 for the rest
+ * (thread stays alive in Work gallery, peeking between tiles at z-[33]).
  */
 export function desktopRedThreadOpacity(progress: number): number {
   if (prefersReducedMotion) return 0.35; // Fully drawn, low opacity
-  if (progress < 0.02) return linearMap(progress, 0, 0.02, 0, 0.65);
   if (progress < 0.62) return 0.65;
-  if (progress < 0.66) return linearMap(progress, 0.62, 0.66, 0.65, 0);
-  return 0;
+  if (progress < 0.66) return linearMap(progress, 0.62, 0.66, 0.65, 0.45);
+  return 0.45;
 }
