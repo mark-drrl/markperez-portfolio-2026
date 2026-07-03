@@ -216,7 +216,19 @@ export default function DesktopWorkView({
         className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-30"
         style={{ opacity: chromeOpacity }}
       >
-        <div className="pointer-events-none absolute inset-x-8 top-8 grid grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white">
+        {/* "Selected Works" — Marvell-style big type overlapping the cascading tiles */}
+        <div
+          className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center"
+          aria-hidden
+        >
+          <p
+            className="font-editorial text-white leading-none text-center select-none"
+            style={{ fontSize: "clamp(64px, 7vw, 110px)" }}
+          >
+            Selected Works
+          </p>
+        </div>
+        <div className="pointer-events-none absolute inset-x-8 top-8 z-[2] grid grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white">
           <div className="font-semibold leading-relaxed">
             <MarkPerezBrand variant="onDark" onActivate={unlockWorkScroll} />
             <WorkSocialLinks links={socialButtons} toneSource={socialNavTone} />

@@ -30,6 +30,17 @@ type VirtualScrollData = {
   event: WheelEvent | TouchEvent;
 };
 
+/** Auto-drift rate: virtual-px per second. Slowest column creeps, fastest flows. */
+const WORK_AUTO_DRIFT_RATE = 14;
+
+/** Delay after lock engages before drift starts — prevents entry misalignment. */
+const WORK_AUTO_DRIFT_DELAY_MS = 800;
+
+/** Evaluated once at module load — safe for a client-only module. */
+const prefersReducedMotion =
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 export const workScrollBridge = {
   scrollYProgress: null as MotionValue<number> | null,
   virtualScroll: null as MotionValue<number> | null,
@@ -47,6 +58,8 @@ export const workScrollBridge = {
   galleryScrollEnabledAt: 0,
   /** Set when returning from a project page — engage lock once Lenis is ready. */
   pendingWorkGalleryLanding: false,
+  /** `performance.now()` timestamp when drift is allowed (lock time + 800ms delay). */
+  driftEnabledAt: 0,
 };
 
 export function isWorkGalleryScrollActive() {
@@ -194,6 +207,8 @@ export function engageWorkScroll() {
   workScrollBridge.lockScrollY = getWorkAnchorScrollY();
   workScrollBridge.galleryScrollEnabledAt =
     performance.now() + GALLERY_SCROLL_ENABLE_DELAY_MS;
+  workScrollBridge.driftEnabledAt =
+    performance.now() + WORK_AUTO_DRIFT_DELAY_MS;
   workScrollBridge.virtualScrollVelocity = 0;
   pinLenisToWorkAnchor();
 }
@@ -203,6 +218,7 @@ export function unlockWorkScroll() {
   workScrollBridge.lockScrollY = 0;
   workScrollBridge.virtualScrollVelocity = 0;
   workScrollBridge.galleryScrollEnabledAt = 0;
+  workScrollBridge.driftEnabledAt = 0;
 }
 
 export function registerWorkScrollMotionValues(
@@ -364,6 +380,17 @@ export function tickWorkVirtualScrollSmoothing(time: number) {
     if (Math.abs(workScrollBridge.virtualScrollVelocity) < 0.08) {
       workScrollBridge.virtualScrollVelocity = 0;
     }
+  }
+
+  // Auto-drift: gentle continuous waterfall cascade when locked and delay has elapsed.
+  // Applies always (user wheel input adds to the same target, so drift never fights momentum).
+  if (
+    !prefersReducedMotion &&
+    workScrollBridge.isLocked &&
+    workScrollBridge.driftEnabledAt > 0 &&
+    performance.now() >= workScrollBridge.driftEnabledAt
+  ) {
+    workScrollBridge.targetVirtualScroll += WORK_AUTO_DRIFT_RATE * deltaTime;
   }
 
   const target = workScrollBridge.targetVirtualScroll;

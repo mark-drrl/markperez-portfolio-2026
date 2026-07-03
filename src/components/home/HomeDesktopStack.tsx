@@ -289,7 +289,7 @@ export default function HomeDesktopStack({
         </motion.div>
 
         {/* Work — pointer-events managed internally by DesktopWorkView via workPointerEvents */}
-        <div className="absolute inset-0 z-[35] h-full w-full">
+        <div className="pointer-events-none absolute inset-0 z-[35] h-full w-full">
           <Work scrollYProgress={scrollYProgress} pointerEvents={workPointerEvents} />
         </div>
       </motion.div>

@@ -36,25 +36,45 @@ function WorkImageLink({
 }) {
   const href = getWorkGalleryHref(src);
   const warmedRef = useRef(false);
+  const linkRef = useRef<HTMLAnchorElement>(null);
 
   const handlePointerEnter = useCallback(() => {
-    if (!href || warmedRef.current || !isWorkDetailPath(href)) {
-      return;
+    // Route preload (existing)
+    if (href && !warmedRef.current && isWorkDetailPath(href)) {
+      warmedRef.current = true;
+      void preloadCaseStudyRoute(href);
     }
 
-    warmedRef.current = true;
-    void preloadCaseStudyRoute(href);
-  }, [href]);
+    // Dispatch tile-hover event for RedThread
+    if (linksEnabled && linkRef.current) {
+      const rect = linkRef.current.getBoundingClientRect();
+      window.dispatchEvent(
+        new CustomEvent("work-tile-hover", {
+          detail: { active: true, x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+        }),
+      );
+    }
+  }, [href, linksEnabled]);
+
+  const handlePointerLeave = useCallback(() => {
+    if (linksEnabled) {
+      window.dispatchEvent(
+        new CustomEvent("work-tile-hover", { detail: { active: false } }),
+      );
+    }
+  }, [linksEnabled]);
 
   if (linksEnabled && href) {
     return (
       <Link
+        ref={linkRef}
         href={href}
         prefetch={false}
         className="group/tile block h-full w-full outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#9F1F2E]"
         data-work-gallery-link
         aria-label={ariaLabel}
         onPointerEnter={handlePointerEnter}
+        onPointerLeave={handlePointerLeave}
       >
         {children}
       </Link>
