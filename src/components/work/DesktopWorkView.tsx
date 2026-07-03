@@ -179,9 +179,9 @@ export default function DesktopWorkView({
             opacity: edgeOpacity,
             height: `${FIGMA_WORK_EDGE_TOP_HEIGHT_VH}vh`,
             background:
-              "linear-gradient(to bottom, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 45%, transparent 80%)",
-            WebkitBackdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
-            backdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
+              "linear-gradient(to bottom, rgba(234,234,234,0.82) 0%, rgba(234,234,234,0.38) 45%, transparent 80%)",
+            WebkitBackdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
+            backdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
             WebkitMaskImage:
               "linear-gradient(to bottom, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
             maskImage:
@@ -195,9 +195,9 @@ export default function DesktopWorkView({
             opacity: edgeOpacity,
             height: `${FIGMA_WORK_EDGE_BOTTOM_HEIGHT_VH}vh`,
             background:
-              "linear-gradient(to top, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 45%, transparent 80%)",
-            WebkitBackdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
-            backdropFilter: "blur(44px) saturate(1.9) brightness(1.06)",
+              "linear-gradient(to top, rgba(234,234,234,0.82) 0%, rgba(234,234,234,0.38) 45%, transparent 80%)",
+            WebkitBackdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
+            backdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
             WebkitMaskImage:
               "linear-gradient(to top, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
             maskImage:
@@ -216,21 +216,22 @@ export default function DesktopWorkView({
         className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-30"
         style={{ opacity: chromeOpacity }}
       >
-        {/* "Selected Works" — Marvell-style big type overlapping the cascading tiles */}
+        {/* "Selected Works" — Marvell-style big type overlapping the cascading tiles.
+            Using ink (#151515/90) for legibility on the light #EAEAEA field. */}
         <div
           className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center"
           aria-hidden
         >
           <p
-            className="font-editorial text-white leading-none text-center select-none"
+            className="font-editorial text-[#151515]/90 leading-none text-center select-none"
             style={{ fontSize: "clamp(64px, 7vw, 110px)" }}
           >
             Selected Works
           </p>
         </div>
-        <div className="pointer-events-none absolute inset-x-8 top-8 z-[2] grid grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-white">
+        <div className="pointer-events-none absolute inset-x-8 top-8 z-[2] grid grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-[#151515]/75">
           <div className="font-semibold leading-relaxed">
-            <MarkPerezBrand variant="onDark" onActivate={unlockWorkScroll} />
+            <MarkPerezBrand variant="onLight" onActivate={unlockWorkScroll} />
             <WorkSocialLinks links={socialButtons} toneSource={socialNavTone} />
           </div>
           <p className="font-neue max-w-[520px] font-semibold leading-relaxed tracking-[0.08em]">
@@ -242,7 +243,7 @@ export default function DesktopWorkView({
             <br />
             MANILA, PHILIPPINES
             <br />
-            <span className="font-normal text-white" suppressHydrationWarning>
+            <span className="font-normal text-[#151515]/75" suppressHydrationWarning>
               {dubaiTime || "\u00a0"}
             </span>
           </p>
@@ -262,7 +263,7 @@ export default function DesktopWorkView({
                 window.location.href = "/";
               }
             }}
-            className="pointer-events-auto text-[10px] font-semibold tracking-[0.15em] text-white transition-colors hover:text-[#9F1F2E]"
+            className="pointer-events-auto text-[10px] font-semibold tracking-[0.15em] text-[#151515]/75 transition-colors hover:text-[#9F1F2E]"
           >
             BACK TO HOME
           </button>
@@ -273,7 +274,7 @@ export default function DesktopWorkView({
             </p>
             <Link
               href="/contact"
-              className="font-neue text-[10px] font-semibold tracking-[0.15em] text-white transition-colors hover:text-[#9F1F2E]"
+              className="font-neue text-[10px] font-semibold tracking-[0.15em] text-[#151515]/75 transition-colors hover:text-[#9F1F2E]"
             >
               GET IN TOUCH →
             </Link>

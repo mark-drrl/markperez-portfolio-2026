@@ -46,49 +46,56 @@ const textFormationLock = 0.29;
 const formationLock = 0.32;
 const gridCells: CreateGridCell[] = [
   {
-    className: "left-0 top-0 h-[60.5%] w-[calc((100%-1vh)/3)]",
+    // col0, top 8vh, h 30vh
+    className: "left-[6vw] top-[8vh] h-[30vh] w-[24vw]",
     blur: 11,
     start: 0.174,
     end: 0.265,
     origin: "42% 58%",
   },
   {
-    className: "left-0 top-[calc(60.5%+0.5vh)] h-[60.5%] w-[calc((100%-1vh)/3)]",
+    // col0, top 52vh, h 36vh
+    className: "left-[6vw] top-[52vh] h-[36vh] w-[24vw]",
     blur: 13,
     start: 0.162,
     end: 0.25,
     origin: "58% 28%",
   },
   {
-    className: "left-[calc((100%-1vh)/3+0.5vh)] top-[13%] h-[60.5%] w-[calc((100%-1vh)/3)]",
+    // col1, top -4vh, h 32vh
+    className: "left-[38vw] -top-[4vh] h-[32vh] w-[24vw]",
     blur: 14,
     start: 0.158,
     end: 0.235,
     origin: "46% 48%",
   },
   {
-    className: "left-[calc((100%-1vh)/3+0.5vh)] -top-[48%] h-[60.5%] w-[calc((100%-1vh)/3)]",
+    // col1, top 42vh, h 44vh
+    className: "left-[38vw] top-[42vh] h-[44vh] w-[24vw]",
     blur: 12,
     start: 0.168,
     end: 0.255,
     origin: "64% 62%",
   },
   {
-    className: "left-[calc((100%-1vh)/3+0.5vh)] top-[74%] h-[60.5%] w-[calc((100%-1vh)/3)]",
+    // col1, top 100vh, h 30vh (below fold)
+    className: "left-[38vw] top-[100vh] h-[30vh] w-[24vw]",
     blur: 10,
     start: 0.178,
     end: 0.27,
     origin: "38% 34%",
   },
   {
-    className: "left-[calc(((100%-1vh)/3)*2+1vh)] top-0 h-[57.5%] w-[calc((100%-1vh)/3)]",
+    // col2, top 14vh, h 38vh
+    className: "left-[70vw] top-[14vh] h-[38vh] w-[24vw]",
     blur: 10,
     start: 0.17,
     end: 0.26,
     origin: "52% 54%",
   },
   {
-    className: "left-[calc(((100%-1vh)/3)*2+1vh)] top-[calc(57.5%+0.5vh)] h-[41.5%] w-[calc((100%-1vh)/3)]",
+    // col2, top 66vh, h 26vh
+    className: "left-[70vw] top-[66vh] h-[26vh] w-[24vw]",
     blur: 13,
     start: 0.164,
     end: 0.252,

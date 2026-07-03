@@ -203,7 +203,7 @@ export default function WorkColumnGallery({
               transform: `translate3d(0, ${computeColumnTranslateVh(virtualScroll.get(), column)}vh, 0)`,
             }}
           >
-            <div className="flex flex-col gap-[0.5vh]">
+            <div className="flex flex-col gap-[10vh]">
               {loopedTiles.map((tile, tileIndex) => (
                 <div
                   key={`${tile.image}-${tileIndex}`}

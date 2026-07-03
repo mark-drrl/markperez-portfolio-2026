@@ -24,38 +24,47 @@ export const WORK_GALLERY_TRANSLATE_BIAS_VH = -0.5;
 
 export const workColumns = [
   {
-    left: "0%",
-    width: "calc((100% - 1vh) / 3)",
+    left: "6vw",
+    width: "24vw",
     speed: 10,
-    initialY: 0,
+    // initialY derived so tile[0] top = 8vh at virtualOffset=0.
+    // cycleHeight = 30 + (10+36) + (10+40) = 126vh
+    // initialY = 8 + 126 + BIAS(0.5) = 134.5
+    initialY: 134.5,
     tiles: [
-      { height: 60.5, image: 0 },
-      { height: 60.5, image: 1 },
-      { height: 60.5, image: 7 },
+      { height: 30, image: 0 },
+      { height: 36, image: 1 },
+      { height: 40, image: 7 },
     ],
   },
   {
-    left: "calc((100% - 1vh) / 3 + 0.5vh)",
-    width: "calc((100% - 1vh) / 3)",
+    left: "38vw",
+    width: "24vw",
     speed: 20,
-    initialY: -48,
+    // initialY derived so tile[0] top = -4vh at virtualOffset=0.
+    // cycleHeight = 32 + (10+44) + (10+30) + (10+38) = 174vh
+    // initialY = -4 + 174 + BIAS(0.5) = 170.5
+    initialY: 170.5,
     tiles: [
-      { height: 60.5, image: 3 },
-      { height: 60.5, image: 2 },
-      { height: 60.5, image: 4 },
-      { height: 60.5, image: 9 },
+      { height: 32, image: 2 },
+      { height: 44, image: 3 },
+      { height: 30, image: 4 },
+      { height: 38, image: 9 },
     ],
   },
   {
-    left: "calc(((100% - 1vh) / 3) * 2 + 1vh)",
-    width: "calc((100% - 1vh) / 3)",
+    left: "70vw",
+    width: "24vw",
     speed: 30,
-    initialY: 0,
+    // initialY derived so tile[0] top = 14vh at virtualOffset=0.
+    // cycleHeight = 38 + (10+26) + (10+42) + (10+34) = 170vh
+    // initialY = 14 + 170 + BIAS(0.5) = 184.5
+    initialY: 184.5,
     tiles: [
-      { height: 57.5, image: 5 },
-      { height: 41.5, image: 6 },
-      { height: 57.5, image: 10 },
-      { height: 57.5, image: 8 },
+      { height: 38, image: 5 },
+      { height: 26, image: 6 },
+      { height: 42, image: 10 },
+      { height: 34, image: 8 },
     ],
   },
 ] as const satisfies readonly WorkColumnDefinition[];
@@ -80,72 +89,73 @@ export const curateCellShellTones = [
 // cell1 → cell4.
 export const desktopCurateReplacementCells = [
   {
-    className: "left-0 top-0 h-[60.5vh] w-[calc((100%-1vh)/3)]",
+    // col0, top 8vh, h 30vh
+    className: "left-[6vw] top-[8vh] h-[30vh] w-[24vw]",
     start: 0.407,
     end: 0.45,
     origin: "42% 58%",
     columnIndex: 0,
-    sampleVh: 30.25,
+    sampleVh: 23,
     imageIndex: 0,
   },
   {
-    className:
-      "left-0 top-[calc(60.5vh+0.5vh)] h-[60.5vh] w-[calc((100%-1vh)/3)]",
+    // col0, top 52vh, h 36vh
+    className: "left-[6vw] top-[52vh] h-[36vh] w-[24vw]",
     start: 0.469,
     end: 0.512,
     origin: "58% 72%",
     columnIndex: 0,
-    sampleVh: 91.25,
+    sampleVh: 70,
     imageIndex: 1,
   },
   {
-    className:
-      "left-[calc((100%-1vh)/3+0.5vh)] top-[13vh] h-[60.5vh] w-[calc((100%-1vh)/3)]",
+    // col1, top -4vh, h 32vh
+    className: "left-[38vw] -top-[4vh] h-[32vh] w-[24vw]",
     start: 0.365,
     end: 0.408,
     origin: "46% 48%",
     columnIndex: 1,
-    sampleVh: 43.25,
+    sampleVh: 12,
     imageIndex: 2,
   },
   {
-    className:
-      "left-[calc((100%-1vh)/3+0.5vh)] -top-[48vh] h-[60.5vh] w-[calc((100%-1vh)/3)]",
+    // col1, top 42vh, h 44vh
+    className: "left-[38vw] top-[42vh] h-[44vh] w-[24vw]",
     start: 0.448,
     end: 0.491,
     origin: "64% 34%",
     columnIndex: 1,
-    sampleVh: -17.75,
+    sampleVh: 64,
     imageIndex: 3,
   },
   {
-    className:
-      "left-[calc((100%-1vh)/3+0.5vh)] top-[74vh] h-[60.5vh] w-[calc((100%-1vh)/3)]",
+    // col1, top 100vh, h 30vh (below fold)
+    className: "left-[38vw] top-[100vh] h-[30vh] w-[24vw]",
     start: 0.49,
     end: 0.535,
     origin: "38% 68%",
     columnIndex: 1,
-    sampleVh: 89,
+    sampleVh: 115,
     imageIndex: 4,
   },
   {
-    className:
-      "left-[calc(((100%-1vh)/3)*2+1vh)] top-0 h-[57.5vh] w-[calc((100%-1vh)/3)]",
+    // col2, top 14vh, h 38vh
+    className: "left-[70vw] top-[14vh] h-[38vh] w-[24vw]",
     start: 0.386,
     end: 0.429,
     origin: "52% 54%",
     columnIndex: 2,
-    sampleVh: 28.75,
+    sampleVh: 33,
     imageIndex: 5,
   },
   {
-    className:
-      "left-[calc(((100%-1vh)/3)*2+1vh)] top-[calc(57.5vh+0.5vh)] h-[41.5vh] w-[calc((100%-1vh)/3)]",
+    // col2, top 66vh, h 26vh
+    className: "left-[70vw] top-[66vh] h-[26vh] w-[24vw]",
     start: 0.427,
     end: 0.47,
     origin: "36% 62%",
     columnIndex: 2,
-    sampleVh: 68.25,
+    sampleVh: 79,
     imageIndex: 6,
   },
 ] as const;
@@ -156,7 +166,7 @@ export const desktopCurateHandoffImageIndices =
 
 export function columnCycleHeight(tiles: readonly { height: number }[]) {
   return tiles.reduce(
-    (total, tile, index) => total + tile.height + (index > 0 ? 0.5 : 0),
+    (total, tile, index) => total + tile.height + (index > 0 ? 10 : 0),
     0,
   );
 }

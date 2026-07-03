@@ -193,6 +193,15 @@ export default function HomeDesktopStack({
 
   return (
     <div className="hidden md:contents">
+      {/* Faint drafting-grid lines on the light field — desktop only, behind all sections */}
+      <div
+        className="pointer-events-none absolute inset-0 z-0 hidden md:block"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(to right, rgba(21,21,21,0.045) 0px, rgba(21,21,21,0.045) 1px, transparent 1px, transparent 8vw), repeating-linear-gradient(to bottom, rgba(21,21,21,0.045) 0px, rgba(21,21,21,0.045) 1px, transparent 1px, transparent 8vh)",
+        }}
+        aria-hidden
+      />
       {/* Section layer wrapper — receives velocity skew. Does NOT wrap fixed chrome. */}
       <motion.div
         className="absolute inset-0 z-10 h-screen w-full"
