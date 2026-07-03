@@ -84,7 +84,6 @@ interface ReplacementImageProps {
   index: number;
   scrollYProgress: MotionValue<number>;
   variant: "desktop" | "mobile";
-  mobileLite?: boolean;
   tone?: string;
 }
 
@@ -93,7 +92,6 @@ function ReplacementImage({
   index,
   scrollYProgress,
   variant,
-  mobileLite = false,
   tone,
 }: ReplacementImageProps) {
   const isMobile = variant === "mobile";
@@ -233,7 +231,6 @@ interface CurateCharacterProps {
   character: string;
   index: number;
   scrollYProgress: MotionValue<number>;
-  total: number;
   start: number;
   end: number;
 }
@@ -242,7 +239,6 @@ function CurateCharacter({
   character,
   index,
   scrollYProgress,
-  total,
   start,
   end,
 }: CurateCharacterProps) {
@@ -288,7 +284,6 @@ function CurateHeadingDesktop({
             character={character}
             index={index}
             scrollYProgress={scrollYProgress}
-            total={title.length}
             start={start}
             end={end}
           />
@@ -323,8 +318,7 @@ function CurateHeading({
               character={character}
               index={index}
               scrollYProgress={scrollYProgress}
-              total={title.length}
-              start={charStart}
+                start={charStart}
               end={charEnd}
             />
           );
@@ -564,7 +558,6 @@ export default function Curate({
                 index={index}
                 scrollYProgress={scrollYProgress}
                 variant="mobile"
-                mobileLite={mobileLite}
               />
             ))}
           </motion.div>

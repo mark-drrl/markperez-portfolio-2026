@@ -160,10 +160,6 @@ export const desktopCurateReplacementCells = [
   },
 ] as const;
 
-/** Precomputed at virtual scroll 0 — kept in sync with cells above. */
-export const desktopCurateHandoffImageIndices =
-  desktopCurateReplacementCells.map((cell) => cell.imageIndex);
-
 export function columnCycleHeight(tiles: readonly { height: number }[]) {
   return tiles.reduce(
     (total, tile, index) => total + tile.height + (index > 0 ? 10 : 0),

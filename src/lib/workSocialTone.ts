@@ -1,6 +1,5 @@
 import { getMobileFocusedImageIndex } from "@/lib/mobileWorkScroll";
 import {
-  workColumns,
   workImageIndexAtColumnSample,
   type WorkColumnDefinition,
 } from "@/lib/workColumnLayout";

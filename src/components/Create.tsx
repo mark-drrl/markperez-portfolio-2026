@@ -21,8 +21,6 @@ import {
   mobileSectionLocalProgress,
   mobileSectionScrollKeys,
   mobileStaggeredRange,
-  mobileSectionContentOpacity,
-  mobileSectionTextOpacity,
 } from "@/lib/mobileHomeOpacity";
 import {
   motion,
@@ -136,7 +134,6 @@ interface CharacterProps {
   character: string;
   index: number;
   progress: MotionValue<number>;
-  total: number;
   start: number;
   end: number;
 }
@@ -145,7 +142,6 @@ function FocusCharacter({
   character,
   index,
   progress,
-  total,
   start,
   end,
 }: CharacterProps) {
@@ -256,7 +252,6 @@ function CreateHeading({
               character={character}
               index={index}
               progress={progress}
-              total={heading.length}
               start={charStart}
               end={charEnd}
             />
@@ -278,7 +273,6 @@ function CreateHeading({
             character={character}
             index={index}
             progress={progress}
-            total={heading.length}
             start={start}
             end={end}
           />

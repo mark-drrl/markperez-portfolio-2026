@@ -48,7 +48,6 @@ export function useGalleryScroll(
     let focusedItemIndex = 0;
     let hasUserScrolled = false;
     let lastPaddingTop = 0;
-    let lastPaddingBottom = 0;
 
     function getTrack() {
       return scrollerElement.querySelector<HTMLElement>(galleryTrackSelector);
@@ -98,7 +97,6 @@ export function useGalleryScroll(
         (hasUserScrolled || scrollerElement.scrollTop > 0 || lastPaddingTop > 0);
 
       lastPaddingTop = nextPaddingTop;
-      lastPaddingBottom = nextPaddingBottom;
 
       track.style.paddingTop = `${nextPaddingTop}px`;
       track.style.paddingBottom = `${nextPaddingBottom}px`;

@@ -10,7 +10,6 @@ import {
   VIRTUAL_SCROLL_VELOCITY_GAIN,
   WORK_ENTER_PROGRESS,
   WORK_EXIT_PROGRESS,
-  WORK_HANDOFF_START,
   WORK_UNLOCK_PROGRESS,
   WHEEL_TO_VIRTUAL,
 } from "@/lib/desktopWorkScroll";
@@ -22,7 +21,6 @@ export {
   DESKTOP_GALLERY_HANDOFF_OFFSET,
   WORK_ENTER_PROGRESS,
   WORK_EXIT_PROGRESS,
-  WORK_HANDOFF_START,
 } from "@/lib/desktopWorkScroll";
 
 type VirtualScrollData = {

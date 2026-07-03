@@ -24,7 +24,6 @@ import {
   resetHomeScrollPosition,
   unregisterWorkScrollMotionValues,
   unlockWorkScroll,
-  WORK_ENTER_PROGRESS,
 } from "@/lib/workScrollBridge";
 import {
   motion,

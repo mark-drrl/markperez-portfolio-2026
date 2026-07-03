@@ -112,7 +112,6 @@ export function mobileSectionLocalProgress(
 export function mobileSectionScrollKeys(
   section: MobileHomeSection,
   localInput: readonly number[],
-  localOutput?: readonly number[],
 ) {
   const { start, end } = MOBILE_SECTION_SPAN[section];
   const span = end - start;

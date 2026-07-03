@@ -103,7 +103,7 @@ function imageIndexForSlotWrap(slotIndex: number, wrapCount: number): number {
 
 const TRAVEL_VH = 220;
 const FIELD_START = 0.20;
-const FIELD_END = 0.62;
+// FIELD_END = 0.62 — cards continue past this via virtual scroll; kept as doc comment.
 
 // Image fill windows spread across 0.30–0.56, ordered by slot Y baseline (lowest fills first)
 // We compute fill windows based on slot vertical position.
@@ -119,16 +119,14 @@ const PUSH_OUT_END = 0.20;
 const GRAD_CARD_FADE_START = 0.16;
 const GRAD_CARD_FADE_END = 0.20;
 
-// Hero fades 0–0.17 (desktopHeroOpacity handles this — we just need field cards hidden before 0.05)
-const HERO_PHASE_END = 0.05;
-
 // Title phase boundaries
+// HERO_PHASE_END = 0.05: field cards hidden before GRAD_CARD_START (same value, doc only)
 const PHASE1_START = 0.05;
-const PHASE1_END = 0.13;
+// PHASE1_END = 0.13 = PUSH_OUT_START (doc only)
 const PHASE2_START = 0.13;
-const PHASE2_END = 0.34;
+// PHASE2_END = 0.34 = PHASE3_START (doc only)
 const PHASE3_START = 0.34;
-const PHASE3_END = 0.58;
+// PHASE3_END = 0.58 = PHASE4_START (doc only)
 const PHASE4_START = 0.58;
 
 // Works mode: links become interactive at this threshold
@@ -207,7 +205,7 @@ const prefersReducedMotion =
 
 const GRAD_CARD_W_VW = 42;
 const GRAD_CARD_H_VH = 54;
-const GRAD_CARD_CENTER_X_VW = (100 - GRAD_CARD_W_VW) / 2; // 29vw left
+// GRAD_CARD_CENTER_X_VW = 29vw — used in JSX style directly as "50%" with translate3d(-50%)
 const GRAD_CARD_CENTER_Y_VH = (100 - GRAD_CARD_H_VH) / 2; // 23vh top
 
 // ---------------------------------------------------------------------------
@@ -598,7 +596,6 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   // ---------------------------------------------------------------------------
 
   function renderCardContent(slotIndex: number, imgSrc: string, wVw: number, heightVw: number, isGradient: boolean) {
-    const slot = SLOT_DEFS[slotIndex];
     const srcSet = workGallerySrcSet(imgSrc);
     const project = isGradient ? null : getWorkGalleryProject(imgSrc);
     const ariaLabel = project
