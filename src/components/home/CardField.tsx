@@ -3,7 +3,8 @@
 /**
  * CardField — continuous card-field scene replacing Convey/Create/Curate desktop fades.
  * Stage A: progress 0 → ~0.62. Cards travel bottom→top with 3D-depth parallax.
- * No card fades ever — only positional transforms + image mask fills.
+ * Stage B: past 0.62 the virtual-scroll offset from workScrollBridge drives additional
+ *          card travel, turning the field into the works gallery (no separate 3-col gallery).
  *
  * z-[31] = FAR cards (behind title)
  * z-[32] = title layer
@@ -12,9 +13,12 @@
  */
 
 import { workGalleryImages, workGallerySrcSet } from "@/constants/workGalleryImages";
+import { getWorkGalleryProject } from "@/constants/workGalleryProjects";
 import { curateCellShellTones } from "@/lib/workColumnLayout";
+import { workScrollBridge } from "@/lib/workScrollBridge";
+import { WorkImageLink, GalleryHoverTitle } from "@/components/work/tileParts";
 import { useMotionValueEvent, type MotionValue } from "framer-motion";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 // ---------------------------------------------------------------------------
 // Slot definitions
@@ -77,6 +81,23 @@ const SLOT_BASE_Y_VH: number[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// Image pool rotation — 11 projects across 14 slots cycling on each wrap.
+// Each slot has an independent wrap counter so reassignment staggers naturally.
+// We map slot-wrap counts to image indices (mod 11) to ensure every project
+// appears within a couple of full wheel cycles.
+// ---------------------------------------------------------------------------
+
+const IMAGE_COUNT = workGalleryImages.length; // 11
+
+/**
+ * Returns the image index for a given slot at a given wrap count.
+ * Offset by slotIndex so different slots start at different images.
+ */
+function imageIndexForSlotWrap(slotIndex: number, wrapCount: number): number {
+  return (slotIndex + wrapCount * 3) % IMAGE_COUNT;
+}
+
+// ---------------------------------------------------------------------------
 // Animation constants
 // ---------------------------------------------------------------------------
 
@@ -109,6 +130,20 @@ const PHASE2_END = 0.34;
 const PHASE3_START = 0.34;
 const PHASE3_END = 0.58;
 const PHASE4_START = 0.58;
+
+// Works mode: links become interactive at this threshold
+const LINKS_ENABLE_PROGRESS = 0.62;
+
+// ---------------------------------------------------------------------------
+// Virtual-scroll → card travel factor
+// Converts virtual-pixel offset to vh of additional card travel.
+// Tuned so wheel browsing feels like the old 3-column gallery:
+//   - Old gallery: 1 virtual-px ≈ small column translate
+//   - CardField: we want ~0.045vh per virtual-px (far cards) to ~0.12vh (near cards)
+//   - With depth multiplier applied, that means base factor = 0.065 vh/px
+// Factor chosen empirically: 1400 virtual-px (WORK_VIRTUAL_SCROLL_DISTANCE) ≈ 90vh near-card travel
+// ---------------------------------------------------------------------------
+const VIRTUAL_TO_VH = 0.065; // vh per virtual-pixel (before depth multiplier)
 
 // ---------------------------------------------------------------------------
 // Easing helpers
@@ -179,26 +214,41 @@ const GRAD_CARD_CENTER_Y_VH = (100 - GRAD_CARD_H_VH) / 2; // 23vh top
 // Per-slot card position at given progress
 // ---------------------------------------------------------------------------
 
-function computeSlotY(slotIndex: number, p: number): number {
+function computeSlotY(slotIndex: number, p: number, virtualOffset: number): {
+  yVh: number;
+  wrapCount: number;
+} {
   const slot = SLOT_DEFS[slotIndex];
   const baseY = SLOT_BASE_Y_VH[slotIndex];
 
   if (p < FIELD_START) {
-    return baseY;
+    return { yVh: baseY, wrapCount: 0 };
   }
 
-  const travel = (p - FIELD_START) * TRAVEL_VH * slot.d;
+  // Main scroll travel (pre-lock)
+  const scrollTravel = (p - FIELD_START) * TRAVEL_VH * slot.d;
+
+  // Virtual scroll travel (post-lock): depth multiplier keeps 3D parallax during gallery browse
+  const virtualTravel = virtualOffset * VIRTUAL_TO_VH * slot.d;
+
+  const totalTravel = scrollTravel + virtualTravel;
+
   const cardHeightVh = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
   const cycleSpan = 160 + cardHeightVh;
 
-  let y = baseY - travel;
+  let y = baseY - totalTravel;
+
+  // Count how many times this card has wrapped (for image assignment)
+  const rawWraps = Math.floor((baseY + cardHeightVh - y) / cycleSpan);
+  const wrapCount = Math.max(0, rawWraps);
+
   // Wrap: when card top goes above -cardHeightVh, wrap below viewport
   y = ((y + cardHeightVh) % cycleSpan) - cardHeightVh;
   if (y < -cardHeightVh) {
     y += cycleSpan;
   }
 
-  return y;
+  return { yVh: y, wrapCount };
 }
 
 // ---------------------------------------------------------------------------
@@ -207,7 +257,6 @@ function computeSlotY(slotIndex: number, p: number): number {
 
 function computePushOutY(slotIndex: number, p: number): number {
   const t = clamp01((p - PUSH_OUT_START) / (PUSH_OUT_END - PUSH_OUT_START));
-  const ease = easeOutCubic(t);
 
   // Stagger by slot index noise (spread ~0.15)
   const stagger = (slotIndex / SLOT_DEFS.length) * 0.15;
@@ -232,27 +281,32 @@ function computePushOutScale(slotIndex: number, p: number): number {
 // Main Y computation for a card (combining all phases)
 // ---------------------------------------------------------------------------
 
-function computeCardY(slotIndex: number, p: number): { yVh: number; scale: number; visible: boolean } {
+function computeCardY(slotIndex: number, p: number, virtualOffset: number): {
+  yVh: number;
+  scale: number;
+  visible: boolean;
+  wrapCount: number;
+} {
   // Phase 0: no cards on screen (p < GRAD_CARD_START)
   if (p < GRAD_CARD_START) {
-    return { yVh: 110, scale: 1, visible: false };
+    return { yVh: 110, scale: 1, visible: false, wrapCount: 0 };
   }
 
   // Phase 1 (0.05–0.13): gradient card visible, field cards hidden below viewport
   if (p < PUSH_OUT_START) {
-    return { yVh: 110, scale: 0.5, visible: false };
+    return { yVh: 110, scale: 0.5, visible: false, wrapCount: 0 };
   }
 
   // Phase 2 (0.13–0.20): push-out — cards expand from gradient card center to slots
   if (p < PUSH_OUT_END) {
     const yVh = computePushOutY(slotIndex, p);
     const scale = computePushOutScale(slotIndex, p);
-    return { yVh, scale, visible: true };
+    return { yVh, scale, visible: true, wrapCount: 0 };
   }
 
-  // Phase 3+ (0.20+): field travel
-  const yVh = computeSlotY(slotIndex, p);
-  return { yVh, scale: 1, visible: true };
+  // Phase 3+ (0.20+): field travel + virtual offset
+  const { yVh, wrapCount } = computeSlotY(slotIndex, p, virtualOffset);
+  return { yVh, scale: 1, visible: true, wrapCount };
 }
 
 // ---------------------------------------------------------------------------
@@ -332,6 +386,11 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   const cardRefs = useRef<(HTMLDivElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
   // Refs for image mask wrappers inside each card
   const maskRefs = useRef<(HTMLDivElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
+  // Refs for the img elements inside each card (for dynamic src swaps on wrap)
+  const imgRefs = useRef<(HTMLImageElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
+  // Refs to FAR/NEAR layer containers for pointer-event toggling
+  const farLayerRef = useRef<HTMLDivElement>(null);
+  const nearLayerRef = useRef<HTMLDivElement>(null);
   // Gradient card ref
   const gradCardRef = useRef<HTMLDivElement>(null);
   const gradCardOpacityRef = useRef<HTMLDivElement>(null);
@@ -343,11 +402,27 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   const phase3Ref = useRef<HTMLDivElement>(null);
   const phase4Ref = useRef<HTMLDivElement>(null);
 
+  // Track last wrap counts so we only update img src when they change
+  const lastWrapCountsRef = useRef<number[]>(Array(SLOT_DEFS.length).fill(0));
+  // Current image src per slot (for re-render stability when linksEnabled toggles)
+  const currentImgSrcsRef = useRef<string[]>(
+    SLOT_DEFS.map((slot) => workGalleryImages[slot.imageIndex])
+  );
+
+  // links-enabled state: true when progress ≥ LINKS_ENABLE_PROGRESS or bridge is locked
+  const [linksEnabled, setLinksEnabled] = useState(false);
+
   // Imperative update — zero React re-renders per scroll frame
   const applyTransforms = useCallback((p: number) => {
+    // Read virtual offset from bridge (0 when not locked / handoff not prepared)
+    const virtualOffset = workScrollBridge.virtualScroll?.get() ?? 0;
+    // Effective virtual contribution: 0 at DESKTOP_GALLERY_HANDOFF_OFFSET (which is 0),
+    // positive as drift/wheel advances it.
+    const effectiveVirtual = Math.max(0, virtualOffset);
+
     if (prefersReducedMotion) {
       // Reduced motion: show cards at slot positions with fills per phase
-      SLOT_DEFS.forEach((slot, i) => {
+      SLOT_DEFS.forEach((_slot, i) => {
         const el = cardRefs.current[i];
         const maskEl = maskRefs.current[i];
         if (!el) return;
@@ -366,12 +441,12 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
     }
 
     // Full animation
-    SLOT_DEFS.forEach((slot, i) => {
+    SLOT_DEFS.forEach((_slot, i) => {
       const el = cardRefs.current[i];
       const maskEl = maskRefs.current[i];
       if (!el) return;
 
-      const { yVh, scale, visible } = computeCardY(i, p);
+      const { yVh, scale, visible, wrapCount } = computeCardY(i, p, effectiveVirtual);
       el.style.transform = `translate3d(0, ${yVh}vh, 0) scale(${scale.toFixed(4)})`;
       el.style.opacity = visible ? "1" : "0";
       el.style.pointerEvents = visible ? "auto" : "none";
@@ -381,6 +456,22 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
         const maskStyle = computeMaskStyle(fill);
         maskEl.style.webkitMaskImage = maskStyle;
         maskEl.style.maskImage = maskStyle;
+      }
+
+      // Swap image src when wrap count changes (project rotation)
+      if (wrapCount !== lastWrapCountsRef.current[i]) {
+        lastWrapCountsRef.current[i] = wrapCount;
+        const newImgIndex = imageIndexForSlotWrap(i, wrapCount);
+        const newSrc = workGalleryImages[newImgIndex];
+        currentImgSrcsRef.current[i] = newSrc;
+        const imgEl = imgRefs.current[i];
+        if (imgEl) {
+          if (!imgEl.src.endsWith(newSrc)) {
+            imgEl.src = newSrc;
+            const srcSet = workGallerySrcSet(newSrc);
+            if (srcSet) imgEl.srcset = srcSet;
+          }
+        }
       }
     });
 
@@ -426,7 +517,43 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
     });
   }, []);
 
-  useMotionValueEvent(scrollYProgress, "change", applyTransforms);
+  // Subscribe to scrollYProgress
+  useMotionValueEvent(scrollYProgress, "change", (p) => {
+    applyTransforms(p);
+    // Update links-enabled state (triggers React re-render only on threshold crossing)
+    const shouldEnable = p >= LINKS_ENABLE_PROGRESS || workScrollBridge.isLocked;
+    setLinksEnabled((prev) => prev !== shouldEnable ? shouldEnable : prev);
+  });
+
+  // Subscribe to virtualScroll changes (bridge may register it after mount).
+  // The bridge's MotionValue INSTANCE can be replaced when DesktopWorkView
+  // remounts (e.g. returning from a case study or reload-into-work), so we
+  // keep polling and re-subscribe whenever the instance changes — never cache
+  // a stale MotionValue.
+  useEffect(() => {
+    let subscribed: MotionValue<number> | null = null;
+    let unsub: (() => void) | null = null;
+
+    function syncSubscription() {
+      const vs = workScrollBridge.virtualScroll;
+      if (vs === subscribed) return;
+      unsub?.();
+      subscribed = vs;
+      unsub = vs
+        ? vs.on("change", () => {
+            applyTransforms(scrollYProgress.get());
+          })
+        : null;
+    }
+
+    syncSubscription();
+    const interval = window.setInterval(syncSubscription, 400);
+
+    return () => {
+      window.clearInterval(interval);
+      unsub?.();
+    };
+  }, [scrollYProgress, applyTransforms]);
 
   useEffect(() => {
     applyTransforms(scrollYProgress.get());
@@ -437,16 +564,86 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
     applyTransforms(scrollYProgress.get());
   }, [scrollYProgress, applyTransforms]);
 
+  // After any re-render (e.g. linksEnabled toggle), restore current img srcs
+  // in case React reset them to the initial slot imageIndex values.
+  useEffect(() => {
+    SLOT_DEFS.forEach((_slot, i) => {
+      const imgEl = imgRefs.current[i];
+      const currentSrc = currentImgSrcsRef.current[i];
+      if (imgEl && currentSrc && !imgEl.src.endsWith(currentSrc)) {
+        imgEl.src = currentSrc;
+        const srcSet = workGallerySrcSet(currentSrc);
+        if (srcSet) imgEl.srcset = srcSet;
+      }
+    });
+  });
+
+  // Toggle aria-hidden on layer containers when links become enabled
+  // (pointer-events are controlled per-card via cardRefs; pointer-events on children
+  // override the parent's pointer-events:none in HTML even without inheriting it)
+  useEffect(() => {
+    const far = farLayerRef.current;
+    const near = nearLayerRef.current;
+    if (linksEnabled) {
+      far?.removeAttribute("aria-hidden");
+      near?.removeAttribute("aria-hidden");
+    } else {
+      far?.setAttribute("aria-hidden", "true");
+      near?.setAttribute("aria-hidden", "true");
+    }
+  }, [linksEnabled]);
+
+  // ---------------------------------------------------------------------------
+  // Render helpers
+  // ---------------------------------------------------------------------------
+
+  function renderCardContent(slotIndex: number, imgSrc: string, wVw: number, heightVw: number, isGradient: boolean) {
+    const slot = SLOT_DEFS[slotIndex];
+    const srcSet = workGallerySrcSet(imgSrc);
+    const project = isGradient ? null : getWorkGalleryProject(imgSrc);
+    const ariaLabel = project
+      ? `${project.title} — ${project.discipline}, ${project.year} (case study)`
+      : undefined;
+
+    const imgEl = (
+      <img
+        ref={(el) => { imgRefs.current[slotIndex] = el; }}
+        src={imgSrc}
+        srcSet={srcSet}
+        sizes="25vw"
+        alt=""
+        loading="eager"
+        decoding="async"
+        className={`h-full w-full object-cover grayscale contrast-[1.05] brightness-[0.95] saturate-0 transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)]${linksEnabled ? " group-hover/tile:grayscale-0 group-hover/tile:contrast-110 group-hover/tile:brightness-105 group-focus-visible/tile:grayscale-0 group-focus-visible/tile:contrast-110 group-focus-visible/tile:brightness-105" : ""}`}
+      />
+    );
+
+    return (
+      <WorkImageLink src={imgSrc} linksEnabled={isGradient ? false : linksEnabled} ariaLabel={ariaLabel}>
+        <div className="relative h-full w-full overflow-hidden">
+          {imgEl}
+          {project ? (
+            <GalleryHoverTitle
+              title={project.title}
+              discipline={project.discipline}
+              year={project.year}
+              linksEnabled={linksEnabled}
+            />
+          ) : null}
+        </div>
+      </WorkImageLink>
+    );
+  }
+
   return (
     <>
       {/* FAR card layer — z-[31] (behind title z-[32] and RedThread z-[33]) */}
-      <div className="pointer-events-none absolute inset-0 z-[31] hidden md:block" aria-hidden="true">
+      <div ref={farLayerRef} className="pointer-events-none absolute inset-0 z-[31] hidden md:block" aria-hidden="true">
         {SLOT_DEFS.map((slot, i) => {
           if (slot.layer !== "far") return null;
           const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
           const tone = curateCellShellTones[i % curateCellShellTones.length];
           const imgSrc = workGalleryImages[slot.imageIndex];
-          const srcSet = workGallerySrcSet(imgSrc);
 
           return (
             <div
@@ -471,15 +668,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
                   maskImage: "linear-gradient(to top, transparent, transparent)",
                 }}
               >
-                <img
-                  src={imgSrc}
-                  srcSet={srcSet}
-                  sizes="25vw"
-                  alt=""
-                  loading="eager"
-                  decoding="async"
-                  className="h-full w-full object-cover grayscale contrast-[1.05] brightness-[0.95] saturate-0"
-                />
+                {renderCardContent(i, imgSrc, slot.wVw, heightVw, false)}
               </div>
             </div>
           );
@@ -557,7 +746,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
                   key={`p2-${idx}`}
                   className={`inline-block ${isSans ? "font-neue text-[0.9em] font-medium not-italic" : "font-editorial italic font-light"} text-[#151515]/90`}
                 >
-                  {char === " " ? " " : char}
+                  {char === " " ? " " : char}
                 </span>
               );
             })}
@@ -581,7 +770,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
                   key={`p3-${idx}`}
                   className={`inline-block ${isSans ? "font-neue text-[0.9em] font-medium not-italic" : "font-editorial italic font-light"} text-[#151515]/90`}
                 >
-                  {char === " " ? " " : char}
+                  {char === " " ? " " : char}
                 </span>
               );
             })}
@@ -607,13 +796,12 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
       </div>
 
       {/* NEAR card layer — z-[34] (in front of title and RedThread) */}
-      <div className="pointer-events-none absolute inset-0 z-[34] hidden md:block" aria-hidden="true">
+      <div ref={nearLayerRef} className="pointer-events-none absolute inset-0 z-[34] hidden md:block" aria-hidden="true">
         {SLOT_DEFS.map((slot, i) => {
           if (slot.layer !== "near") return null;
           const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
           const tone = curateCellShellTones[i % curateCellShellTones.length];
           const imgSrc = workGalleryImages[slot.imageIndex];
-          const srcSet = workGallerySrcSet(imgSrc);
 
           return (
             <div
@@ -638,15 +826,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
                   maskImage: "linear-gradient(to top, transparent, transparent)",
                 }}
               >
-                <img
-                  src={imgSrc}
-                  srcSet={srcSet}
-                  sizes="25vw"
-                  alt=""
-                  loading="eager"
-                  decoding="async"
-                  className="h-full w-full object-cover grayscale contrast-[1.05] brightness-[0.95] saturate-0"
-                />
+                {renderCardContent(i, imgSrc, slot.wVw, heightVw, false)}
               </div>
             </div>
           );

@@ -1,24 +1,15 @@
 "use client";
 
-import WorkColumnGallery from "@/components/WorkColumnGallery";
 import MarkPerezBrand from "@/components/MarkPerezBrand";
 import WorkSocialLinks from "@/components/WorkSocialLinks";
 import Link from "next/link";
 import { workPageSocialLinks } from "@/constants/workPageSocialLinks";
 import { workGalleryImages } from "@/constants/workGalleryImages";
 import {
-  figmaCurateTransitionBlurStyle,
-  FIGMA_WORK_EDGE_BOTTOM_HEIGHT_VH,
-  FIGMA_WORK_EDGE_TOP_HEIGHT_VH,
-} from "@/lib/figmaBlurStyles";
-import {
   DESKTOP_WORK_CHROME_START,
-  desktopCurateWorkHandoffGlassOpacity,
   desktopWorkChromeOpacity,
-  desktopWorkEdgeVignetteOpacity,
-  desktopWorkBackdropOpacity,
-  desktopWorkGalleryOpacity,
   desktopWorkLayerOpacity,
+  desktopWorkBackdropOpacity,
 } from "@/lib/desktopHomeTransitions";
 import { workColumns } from "@/lib/workColumnLayout";
 import { workHeaderNavTone } from "@/lib/workSocialTone";
@@ -52,7 +43,9 @@ interface DesktopWorkViewProps {
 }
 
 /**
- * Desktop Work — gallery virtual scroll, glass edge vignettes, chrome on top.
+ * Desktop Work — chrome (top grid, back-to-home, CTA, works heading) only.
+ * The 3-column gallery has been removed — CardField IS the gallery in works mode.
+ * The scroll bridge is still registered here so virtualScroll propagates to CardField.
  */
 export default function DesktopWorkView({
   scrollYProgress,
@@ -68,20 +61,7 @@ export default function DesktopWorkView({
     scrollYProgress,
     desktopWorkBackdropOpacity,
   );
-  const galleryOpacity = useTransform(scrollYProgress, desktopWorkGalleryOpacity);
-  const handoffGlassOpacity = useTransform(
-    scrollYProgress,
-    desktopCurateWorkHandoffGlassOpacity,
-  );
   const chromeOpacity = useTransform(scrollYProgress, desktopWorkChromeOpacity);
-  const edgeOpacity = useTransform(
-    scrollYProgress,
-    desktopWorkEdgeVignetteOpacity,
-  );
-
-  const galleryPointerEvents = useTransform(scrollYProgress, (progress) =>
-    progress >= WORK_ENTER_PROGRESS - 0.01 ? "auto" : "none",
-  );
 
   const socialNavTone = useTransform(virtualScroll, (offset) =>
     workHeaderNavTone(offset, {
@@ -112,6 +92,7 @@ export default function DesktopWorkView({
     };
   }, [scrollYProgress, virtualScroll]);
 
+  // Wheel events on the backdrop drive gallery virtualScroll (used by CardField via bridge)
   useEffect(() => {
     const gallery = galleryWheelRef.current;
 
@@ -155,80 +136,28 @@ export default function DesktopWorkView({
       className="absolute inset-0 h-full w-full overflow-hidden bg-transparent"
       style={{ opacity: layerOpacity, pointerEvents }}
     >
+      {/* Translucent #EAEAEA backdrop so chrome text is legible over CardField cards */}
       <motion.div
-        className="pointer-events-none absolute inset-0 bg-[#EAEAEA]"
+        className="pointer-events-none absolute inset-0 bg-[#EAEAEA]/0"
         style={{ opacity: backdropOpacity }}
         aria-hidden
       />
+
+      {/* Full-screen wheel capture — passes events to bridge → CardField via virtualScroll */}
       <motion.div
         ref={galleryWheelRef}
-        className="absolute inset-0 z-0 overflow-hidden"
+        className="absolute inset-0 z-0"
         style={{
-          opacity: galleryOpacity,
-          pointerEvents: galleryPointerEvents,
+          pointerEvents: linksEnabled ? "auto" : "none",
         }}
-      >
-        <WorkColumnGallery
-          virtualScroll={virtualScroll}
-          linksEnabled={linksEnabled}
-        />
-        {/* Edge blurs sit inside the same layer as the gallery so backdrop-filter can see the images */}
-        <motion.div
-          className="pointer-events-none absolute inset-x-0 top-0"
-          style={{
-            opacity: edgeOpacity,
-            height: `${FIGMA_WORK_EDGE_TOP_HEIGHT_VH}vh`,
-            background:
-              "linear-gradient(to bottom, rgba(234,234,234,0.82) 0%, rgba(234,234,234,0.38) 45%, transparent 80%)",
-            WebkitBackdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
-            backdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
-            maskImage:
-              "linear-gradient(to bottom, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
-          }}
-          aria-hidden
-        />
-        <motion.div
-          className="pointer-events-none absolute inset-x-0 bottom-0"
-          style={{
-            opacity: edgeOpacity,
-            height: `${FIGMA_WORK_EDGE_BOTTOM_HEIGHT_VH}vh`,
-            background:
-              "linear-gradient(to top, rgba(234,234,234,0.82) 0%, rgba(234,234,234,0.38) 45%, transparent 80%)",
-            WebkitBackdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
-            backdropFilter: "blur(44px) saturate(1.2) brightness(1.02)",
-            WebkitMaskImage:
-              "linear-gradient(to top, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
-            maskImage:
-              "linear-gradient(to top, black 0%, rgba(0,0,0,0.94) 22%, rgba(0,0,0,0.78) 40%, rgba(0,0,0,0.5) 60%, rgba(0,0,0,0.22) 80%, rgba(0,0,0,0.06) 92%, transparent 100%)",
-          }}
-          aria-hidden
-        />
-        <motion.div
-          className="pointer-events-none absolute inset-0 mix-blend-soft-light"
-          style={{ opacity: handoffGlassOpacity, ...figmaCurateTransitionBlurStyle }}
-          aria-hidden
-        />
-      </motion.div>
+      />
 
+      {/* Chrome — z-[30], sits above CardField cards (cards are z-[31]/z-[34]) */}
       <motion.div
         className="pointer-events-none absolute inset-x-0 top-0 bottom-0 z-30"
         style={{ opacity: chromeOpacity }}
       >
-        {/* "Selected Works" — Marvell-style big type overlapping the cascading tiles.
-            Using ink (#151515/90) for legibility on the light #EAEAEA field. */}
-        <div
-          className="pointer-events-none absolute inset-0 z-[1] flex items-center justify-center"
-          aria-hidden
-        >
-          <p
-            className="font-editorial text-[#151515]/90 leading-none text-center select-none"
-            style={{ fontSize: "clamp(64px, 7vw, 110px)" }}
-          >
-            Selected Works
-          </p>
-        </div>
+        {/* Top description grid */}
         <div className="pointer-events-none absolute inset-x-8 top-8 z-[2] grid grid-cols-[minmax(0,0.42fr)_minmax(0,1.88fr)_minmax(0,0.7fr)] items-start gap-8 text-[10px] uppercase tracking-[0.2em] text-[#151515]/75">
           <div className="font-semibold leading-relaxed">
             <MarkPerezBrand variant="onLight" onActivate={unlockWorkScroll} />
@@ -244,11 +173,12 @@ export default function DesktopWorkView({
             MANILA, PHILIPPINES
             <br />
             <span className="font-normal text-[#151515]/75" suppressHydrationWarning>
-              {dubaiTime || "\u00a0"}
+              {dubaiTime || " "}
             </span>
           </p>
         </div>
 
+        {/* Bottom bar: BACK TO HOME (left), OPEN FOR WORK / GET IN TOUCH (center), works heading (right) */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 px-8 pb-8 pt-0">
           <button
             type="button"
@@ -267,7 +197,7 @@ export default function DesktopWorkView({
           >
             BACK TO HOME
           </button>
-          {/* CTA — bottom-center, clear of back-to-home (left) and works heading (right) */}
+          {/* CTA — bottom-center */}
           <div className="pointer-events-auto absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1 text-center">
             <p className="font-neue text-[10px] font-semibold tracking-[0.15em] text-[#9F1F2E]">
               OPEN FOR WORK
