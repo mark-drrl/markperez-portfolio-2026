@@ -27,11 +27,13 @@ export function WorkImageLink({
   children,
   linksEnabled,
   ariaLabel,
+  project,
 }: {
   src: string;
   children: ReactNode;
   linksEnabled: boolean;
   ariaLabel?: string;
+  project?: { title: string; discipline: string; year: string } | null;
 }) {
   const href = getWorkGalleryHref(src);
   const warmedRef = useRef(false);
@@ -44,16 +46,25 @@ export function WorkImageLink({
       void preloadCaseStudyRoute(href);
     }
 
-    // Dispatch tile-hover event for RedThread tuck
+    // Dispatch tile-hover event for RedThread tuck + bottom-right label swap
     if (linksEnabled && linkRef.current) {
       const rect = linkRef.current.getBoundingClientRect();
       window.dispatchEvent(
         new CustomEvent("work-tile-hover", {
-          detail: { active: true, x: rect.left, y: rect.top, w: rect.width, h: rect.height },
+          detail: {
+            active: true,
+            x: rect.left,
+            y: rect.top,
+            w: rect.width,
+            h: rect.height,
+            title: project?.title,
+            discipline: project?.discipline,
+            year: project?.year,
+          },
         }),
       );
     }
-  }, [href, linksEnabled]);
+  }, [href, linksEnabled, project]);
 
   const handlePointerLeave = useCallback(() => {
     if (linksEnabled) {

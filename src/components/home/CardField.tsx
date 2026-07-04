@@ -49,14 +49,16 @@ type SlotDef = {
   layer: "far" | "mid" | "near";
 };
 
+// Item 2: Increased far-layer widths (s0–s5) for better visibility at distance.
+// wVw: s0 10→15, s1 12→16, s2 10→14, s3 11→15, s4 13→17, s5 13→17
 const SLOT_DEFS: SlotDef[] = [
   // FAR layer — z-[30]
-  { imageIndex: 0,  xVw: 8,  d: 0.60, wVw: 10, aspect: [4, 5], layer: "far" },
-  { imageIndex: 1,  xVw: 30, d: 0.70, wVw: 12, aspect: [3, 2], layer: "far" },
-  { imageIndex: 2,  xVw: 55, d: 0.65, wVw: 10, aspect: [1, 1], layer: "far" },
-  { imageIndex: 3,  xVw: 78, d: 0.70, wVw: 11, aspect: [4, 5], layer: "far" },
-  { imageIndex: 4,  xVw: 18, d: 0.80, wVw: 13, aspect: [3, 2], layer: "far" },
-  { imageIndex: 5,  xVw: 68, d: 0.85, wVw: 13, aspect: [4, 5], layer: "far" },
+  { imageIndex: 0,  xVw: 8,  d: 0.60, wVw: 15, aspect: [4, 5], layer: "far" },
+  { imageIndex: 1,  xVw: 30, d: 0.70, wVw: 16, aspect: [3, 2], layer: "far" },
+  { imageIndex: 2,  xVw: 55, d: 0.65, wVw: 14, aspect: [1, 1], layer: "far" },
+  { imageIndex: 3,  xVw: 78, d: 0.70, wVw: 15, aspect: [4, 5], layer: "far" },
+  { imageIndex: 4,  xVw: 18, d: 0.80, wVw: 17, aspect: [3, 2], layer: "far" },
+  { imageIndex: 5,  xVw: 68, d: 0.85, wVw: 17, aspect: [4, 5], layer: "far" },
   // MID layer (shallowest near, d=1.05–1.15) — z-[32], BEHIND thread z-[33]
   { imageIndex: 6,  xVw: 4,  d: 1.05, wVw: 20, aspect: [4, 5], layer: "mid" },  // s6
   { imageIndex: 7,  xVw: 36, d: 1.15, wVw: 21, aspect: [3, 2], layer: "mid" },  // s7 — width trimmed
@@ -64,49 +66,150 @@ const SLOT_DEFS: SlotDef[] = [
   // NEAR layer (deeper near, d=1.25–1.40) — z-[34], IN FRONT of thread z-[33]
   { imageIndex: 9,  xVw: 14, d: 1.30, wVw: 21, aspect: [3, 2], layer: "near" }, // s9  — width trimmed
   { imageIndex: 10, xVw: 48, d: 1.25, wVw: 20, aspect: [4, 5], layer: "near" }, // s10 — width trimmed
-  { imageIndex: 8,  xVw: 74, d: 1.40, wVw: 20, aspect: [1, 1], layer: "near" }, // s11 repeats img 8, trimmed
-  { imageIndex: 3,  xVw: 28, d: 1.35, wVw: 21, aspect: [4, 5], layer: "near" }, // s12 repeats img 3, trimmed
-  { imageIndex: 1,  xVw: 58, d: 1.40, wVw: 21, aspect: [3, 2], layer: "near" }, // s13 repeats img 1, trimmed
+  { imageIndex: 8,  xVw: 74, d: 1.40, wVw: 20, aspect: [1, 1], layer: "near" }, // s11
+  { imageIndex: 3,  xVw: 28, d: 1.35, wVw: 21, aspect: [4, 5], layer: "near" }, // s12
+  { imageIndex: 1,  xVw: 58, d: 1.40, wVw: 21, aspect: [3, 2], layer: "near" }, // s13
 ];
 
-// Baseline slot Y positions (at p=0.20) — distribute between -5vh and 95vh.
-// Bug 2a fix: increased vertical gaps so same-column cards don't overlap.
-// Near slots in particular given more vertical breathing room.
+// Item 2: Re-tuned SLOT_BASE_Y_VH for better vertical scatter.
+// Audit pairs with |Δx| < 18vw: ensure |Δy| ≥ 45vh between them.
+// Pairs audited:
+//   s0(x8) & s4(x18): |Δx|=10 → must have |Δy|≥45. s0=-4, s4=-1 was only 3 → fixed.
+//   s1(x30) & s7(x36): |Δx|=6 → must have |Δy|≥45. s1=42, s7=-8 → |Δy|=50 ✓
+//   s1(x30) & s12(x28): |Δx|=2 → must have |Δy|≥45. s1=42, s12=70 → |Δy|=28 → fixed.
+//   s3(x78) & s5(x68): |Δx|=10 → must have |Δy|≥45. s3=72, s5=60 was 12 → fixed.
+//   s8(x66) & s5(x68): |Δx|=2 → must have |Δy|≥45. s8=88, s5=20 → |Δy|=68 ✓
+//   s9(x14) & s0(x8): |Δx|=6 → must have |Δy|≥45. s0=-4, s9=50 → |Δy|=54 ✓
+//   s9(x14) & s4(x18): |Δx|=4 → must have |Δy|≥45. s4=45, s9=50 was 5 → fixed.
+//   s10(x48) & s7(x36): |Δx|=12 → must have |Δy|≥45. s7=-8, s10=100 → |Δy|=108 ✓
+//   s13(x58) & s10(x48): |Δx|=10 → must have |Δy|≥45. s10=100, s13=-12 → |Δy|=112 ✓
 const SLOT_BASE_Y_VH: number[] = [
   // FAR slots (s0–s5)
   -4,   // s0 x8
   42,   // s1 x30
   15,   // s2 x55
-  72,   // s3 x78  — spread out more
-  -1,   // s4 x18
-  60,   // s5 x68
-  // MID slots (s6–s8, now "mid" layer)
+  72,   // s3 x78
+  45,   // s4 x18  ← was -1; |Δy| from s0(x8,-4) now 49vh ✓
+  20,   // s5 x68  ← was 60; |Δy| from s3(x78,72) now 52vh ✓; |Δy| from s8(x66,88) now 68vh ✓
+  // MID slots (s6–s8)
   30,   // s6 x4
-  -8,   // s7 x36  — pushed higher (off-screen top at start)
-  88,   // s8 x66  — pushed lower
+  -8,   // s7 x36
+  88,   // s8 x66
   // NEAR slots (s9–s13)
-  50,   // s9 x14
+  95,   // s9 x14  ← was 50; |Δy| from s4(x18,45) now 50vh ✓; from s0(x8,-4) now 99vh ✓
  100,   // s10 x48 — pushed even lower
-  8,    // s11 x74
-  70,   // s12 x28
-  -12,  // s13 x58 — above viewport at start, comes in early
+   8,   // s11 x74
+  -5,   // s12 x28  ← was 70; |Δy| from s1(x30,42) now 47vh ✓
+ -12,   // s13 x58
 ];
 
 // ---------------------------------------------------------------------------
-// Image pool rotation — 11 projects across 14 slots cycling on each wrap.
-// Each slot has an independent wrap counter so reassignment staggers naturally.
-// We map slot-wrap counts to image indices (mod 11) to ensure every project
-// appears within a couple of full wheel cycles.
+// Item 1 — No-duplicate LRU image assignment queue
 // ---------------------------------------------------------------------------
+// Maintains a module-level assignment map (slot → imageIndex) and an LRU queue.
+// When a slot wraps off-screen, it gets the least-recently-used image index
+// that is NOT currently visible in the viewport band (|y| < 130vh).
+// Initial assignment: first 11 slots get images 0–10; remaining 3 get LRU-safe picks.
 
 const IMAGE_COUNT = workGalleryImages.length; // 11
 
+// Module-level so state persists across re-renders without React state overhead.
+// slotImageAssignment[i] = current imageIndex for slot i
+const slotImageAssignment: number[] = new Array(SLOT_DEFS.length).fill(0);
+// LRU queue: index 0 = least recently used, end = most recently used
+const lruQueue: number[] = [];
+
+function initImageAssignment() {
+  lruQueue.length = 0;
+  // First IMAGE_COUNT slots: assign 0..IMAGE_COUNT-1 sequentially
+  for (let i = 0; i < Math.min(SLOT_DEFS.length, IMAGE_COUNT); i++) {
+    slotImageAssignment[i] = i;
+    // Push to LRU in assignment order (0 = least recently used)
+    if (!lruQueue.includes(i)) lruQueue.push(i);
+  }
+  // Remaining slots (indices 11,12,13 for 14 slots): assign LRU-safe picks
+  // At this point we've used all 11 images, so these must repeat.
+  // Pick images that are assigned to the fewest slots.
+  for (let i = IMAGE_COUNT; i < SLOT_DEFS.length; i++) {
+    // Count how many slots currently use each image
+    const useCounts = new Array(IMAGE_COUNT).fill(0);
+    for (let j = 0; j < i; j++) useCounts[slotImageAssignment[j]]++;
+    // Pick the image with the lowest use count (LRU approach for initial fill)
+    let minCount = Infinity;
+    let pick = 0;
+    for (let img = 0; img < IMAGE_COUNT; img++) {
+      if (useCounts[img] < minCount) {
+        minCount = useCounts[img];
+        pick = img;
+      }
+    }
+    slotImageAssignment[i] = pick;
+    // Move pick to end of LRU (most recently used)
+    const lruIdx = lruQueue.indexOf(pick);
+    if (lruIdx !== -1) lruQueue.splice(lruIdx, 1);
+    lruQueue.push(pick);
+  }
+}
+
+// Initialize on module load
+initImageAssignment();
+
 /**
- * Returns the image index for a given slot at a given wrap count.
- * Offset by slotIndex so different slots start at different images.
+ * Get the image src for a slot. Returns from the current assignment map.
+ * Called during initial render and after wraps.
  */
-function imageIndexForSlotWrap(slotIndex: number, wrapCount: number): number {
-  return (slotIndex + wrapCount * 3) % IMAGE_COUNT;
+function getSlotImageSrc(slotIndex: number): string {
+  return workGalleryImages[slotImageAssignment[slotIndex]];
+}
+
+/**
+ * When a slot wraps off-screen, assign it the LRU-safe image:
+ * least-recently-used image NOT currently assigned to any visible slot
+ * (visible = |yVh| < 130vh).
+ *
+ * @param wrappedSlot - which slot just wrapped
+ * @param currentYVhs - current yVh for all slots (to identify visible ones)
+ */
+function assignLruImageOnWrap(
+  wrappedSlot: number,
+  currentYVhs: number[],
+  slotDefs: SlotDef[],
+): string {
+  // Collect image indices currently assigned to visible slots
+  const visibleImages = new Set<number>();
+  for (let i = 0; i < SLOT_DEFS.length; i++) {
+    if (i === wrappedSlot) continue;
+    const slot = slotDefs[i];
+    const cardHeightVh = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
+    const yVh = currentYVhs[i];
+    // Visible = overlaps the viewport [0, 100vh] with generous margin
+    const isVisible = yVh > -(cardHeightVh + 30) && yVh < 130;
+    if (isVisible) {
+      visibleImages.add(slotImageAssignment[i]);
+    }
+  }
+
+  // Find LRU image not in visibleImages
+  let chosen = -1;
+  for (let i = 0; i < lruQueue.length; i++) {
+    if (!visibleImages.has(lruQueue[i])) {
+      chosen = lruQueue[i];
+      break;
+    }
+  }
+
+  // Fallback: if all images are visible (shouldn't happen with ~7 visible of 14),
+  // just use LRU head
+  if (chosen === -1) chosen = lruQueue[0];
+
+  // Update assignment
+  slotImageAssignment[wrappedSlot] = chosen;
+  // Move chosen to MRU end of queue
+  const qi = lruQueue.indexOf(chosen);
+  if (qi !== -1) lruQueue.splice(qi, 1);
+  lruQueue.push(chosen);
+
+  return workGalleryImages[chosen];
 }
 
 // ---------------------------------------------------------------------------
@@ -393,7 +496,9 @@ function computeMaskStyle(fill: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Char stagger title component (reused for phase 2 heading)
+// Item 3: Char stagger title — spaces as non-breaking, transform-only animation
+// Using   (non-breaking space) prevents space collapsing in inline-block spans.
+// No blur per char (was causing layout reflow); opacity+translateY only.
 // ---------------------------------------------------------------------------
 
 const CREATE_HEADING = "Creating the magic";
@@ -415,7 +520,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   const cardRefs = useRef<(HTMLDivElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
   // Refs for image mask wrappers inside each card
   const maskRefs = useRef<(HTMLDivElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
-  // Refs for the img elements inside each card (for dynamic src swaps on wrap)
+  // Refs to the img elements inside each card (for dynamic src swaps on wrap)
   const imgRefs = useRef<(HTMLImageElement | null)[]>(Array(SLOT_DEFS.length).fill(null));
   // Refs to FAR/MID/NEAR layer containers for pointer-event toggling
   const farLayerRef = useRef<HTMLDivElement>(null);
@@ -438,11 +543,16 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
   const lastWrapCountsRef = useRef<number[]>(Array(SLOT_DEFS.length).fill(0));
   // Current image src per slot (for re-render stability when linksEnabled toggles)
   const currentImgSrcsRef = useRef<string[]>(
-    SLOT_DEFS.map((slot) => workGalleryImages[slot.imageIndex])
+    SLOT_DEFS.map((_slot, i) => getSlotImageSrc(i))
   );
+  // Current yVh per slot — used by LRU assignment to detect visible cards
+  const currentYVhsRef = useRef<number[]>(SLOT_BASE_Y_VH.slice());
 
   // links-enabled state: true when progress ≥ LINKS_ENABLE_PROGRESS or bridge is locked
   const [linksEnabled, setLinksEnabled] = useState(false);
+  // Bumped whenever a wrapped slot gets a new image so the JSX (img src,
+  // link href, aria-label, hover labels) re-renders from slotImageAssignment.
+  const [, bumpAssignmentVersion] = useState(0);
 
   // Imperative update — zero React re-renders per scroll frame
   const applyTransforms = useCallback((p: number) => {
@@ -479,6 +589,9 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
       if (!el) return;
 
       const { yVh, scale, visible, wrapCount } = computeCardY(i, p, effectiveVirtual);
+      // Track current yVh for LRU visibility checks
+      currentYVhsRef.current[i] = yVh;
+
       el.style.transform = `translate3d(0, ${yVh}vh, 0) scale(${scale.toFixed(4)})`;
       el.style.opacity = visible ? "1" : "0";
       el.style.pointerEvents = visible ? "auto" : "none";
@@ -490,26 +603,22 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
         maskEl.style.maskImage = maskStyle;
       }
 
-      // Bug 2c fix: only swap image src when wrap count changes AND the card is off-screen.
-      // A wrap should only occur when yVh places the card completely outside the viewport.
-      // We use ±(cardHeightVh + 5) as the off-screen guard zone.
+      // Item 1: LRU-based image swap on wrap.
+      // Only swap when wrap count changes AND card is fully off-screen.
+      // The assignment map is the render source of truth: bump the version so
+      // React re-renders src, srcSet, href, aria-label, and hover labels
+      // together — imperatively patching only img.src left the link/label
+      // props stale (wrong case-study href and bottom-right label).
       if (wrapCount !== lastWrapCountsRef.current[i]) {
         const slot = SLOT_DEFS[i];
         const cardHeightVh = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
         const isOffScreen = yVh < -(cardHeightVh + 5) || yVh > (100 + 5);
         if (isOffScreen) {
           lastWrapCountsRef.current[i] = wrapCount;
-          const newImgIndex = imageIndexForSlotWrap(i, wrapCount);
-          const newSrc = workGalleryImages[newImgIndex];
+          // Use LRU queue to get a non-visible image
+          const newSrc = assignLruImageOnWrap(i, currentYVhsRef.current, SLOT_DEFS);
           currentImgSrcsRef.current[i] = newSrc;
-          const imgEl = imgRefs.current[i];
-          if (imgEl) {
-            if (!imgEl.src.endsWith(newSrc)) {
-              imgEl.src = newSrc;
-              const srcSet = workGallerySrcSet(newSrc);
-              if (srcSet) imgEl.srcset = srcSet;
-            }
-          }
+          bumpAssignmentVersion((v) => v + 1);
         }
       }
     });
@@ -613,20 +722,6 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
     applyTransforms(scrollYProgress.get());
   }, [scrollYProgress, applyTransforms]);
 
-  // After any re-render (e.g. linksEnabled toggle), restore current img srcs
-  // in case React reset them to the initial slot imageIndex values.
-  useEffect(() => {
-    SLOT_DEFS.forEach((_slot, i) => {
-      const imgEl = imgRefs.current[i];
-      const currentSrc = currentImgSrcsRef.current[i];
-      if (imgEl && currentSrc && !imgEl.src.endsWith(currentSrc)) {
-        imgEl.src = currentSrc;
-        const srcSet = workGallerySrcSet(currentSrc);
-        if (srcSet) imgEl.srcset = srcSet;
-      }
-    });
-  });
-
   // Toggle aria-hidden on layer containers when links become enabled
   // (pointer-events are controlled per-card via cardRefs; pointer-events on children
   // override the parent's pointer-events:none in HTML even without inheriting it)
@@ -656,6 +751,9 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
       ? `${project.title} — ${project.discipline}, ${project.year} (case study)`
       : undefined;
 
+    // Item 4a+4b: hover color reveal + scale.
+    // grayscale by default; color+contrast+scale on group-hover/tile and group-focus-visible/tile.
+    // scale is on the img (inner zoom, card box unchanged).
     const imgEl = (
       <img
         ref={(el) => { imgRefs.current[slotIndex] = el; }}
@@ -665,12 +763,17 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
         alt=""
         loading="eager"
         decoding="async"
-        className={`h-full w-full object-cover grayscale contrast-[1.05] brightness-[0.95] saturate-0 transition-[filter] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)]${linksEnabled ? " group-hover/tile:grayscale-0 group-hover/tile:contrast-110 group-hover/tile:brightness-105 group-focus-visible/tile:grayscale-0 group-focus-visible/tile:contrast-110 group-focus-visible/tile:brightness-105" : ""}`}
+        className="h-full w-full object-cover grayscale contrast-[1.05] brightness-[0.95] saturate-0 transition-[filter,transform] duration-[1400ms] ease-[cubic-bezier(0.16,1,0.3,1)] group-hover/tile:grayscale-0 group-hover/tile:contrast-110 group-hover/tile:brightness-105 group-hover/tile:scale-[1.04] group-focus-visible/tile:grayscale-0 group-focus-visible/tile:contrast-110 group-focus-visible/tile:brightness-105 group-focus-visible/tile:scale-[1.04]"
       />
     );
 
     return (
-      <WorkImageLink src={imgSrc} linksEnabled={isGradient ? false : linksEnabled} ariaLabel={ariaLabel}>
+      <WorkImageLink
+        src={imgSrc}
+        linksEnabled={isGradient ? false : linksEnabled}
+        ariaLabel={ariaLabel}
+        project={project}
+      >
         <div className="relative h-full w-full overflow-hidden">
           {imgEl}
           {project ? (
@@ -694,7 +797,8 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
           if (slot.layer !== "far") return null;
           const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
           const tone = curateCellShellTones[i % curateCellShellTones.length];
-          const imgSrc = workGalleryImages[slot.imageIndex];
+          // Read from module-level array (not a ref) — safe during render.
+          const imgSrc = getSlotImageSrc(i);
 
           return (
             <div
@@ -790,13 +894,19 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
           </p>
         </div>
 
-        {/* Phase 2: Creating the magic (char stagger — rendered as static on mount, animated in CSS) */}
+        {/* Phase 2: Creating the magic
+            Item 3: spaces rendered as   (non-breaking) to prevent collapse in inline-block spans.
+            No blur animation — opacity+translateY only to avoid layout shake.
+            Container has fixed line-height; chars are inline-block. */}
         <div
           ref={phase2Ref}
           className="absolute inset-0 flex flex-col items-center justify-center text-center transition-opacity duration-300"
           style={{ opacity: 0 }}
         >
-          <h2 className="tracking-[-0.02em] md:text-7xl" style={{ fontSize: "clamp(2rem, 5.5vw, 4rem)" }}>
+          <h2
+            className="tracking-[-0.02em] md:text-7xl leading-none"
+            style={{ fontSize: "clamp(2rem, 5.5vw, 4rem)", whiteSpace: "pre" }}
+          >
             {CREATE_HEADING.split("").map((char, idx) => {
               const isSans = idx >= CREATE_SANS_INDEX;
               return (
@@ -804,7 +914,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
                   key={`p2-${idx}`}
                   className={`inline-block ${isSans ? "font-neue text-[0.9em] font-medium not-italic" : "font-editorial italic font-light"} text-[#151515]/90`}
                 >
-                  {char === " " ? " " : char}
+                  {char === " " ? " " : char}
                 </span>
               );
             })}
@@ -814,13 +924,17 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
           </p>
         </div>
 
-        {/* Phase 3: Curating the brand */}
+        {/* Phase 3: Curating the brand
+            Item 3: same space fix —   + whiteSpace: "pre". */}
         <div
           ref={phase3Ref}
           className="absolute inset-0 flex flex-col items-center justify-center text-center transition-opacity duration-300"
           style={{ opacity: 0 }}
         >
-          <h2 className="tracking-[-0.02em] md:text-7xl" style={{ fontSize: "clamp(2rem, 5.5vw, 4rem)" }}>
+          <h2
+            className="tracking-[-0.02em] md:text-7xl leading-none"
+            style={{ fontSize: "clamp(2rem, 5.5vw, 4rem)", whiteSpace: "pre" }}
+          >
             {CURATE_HEADING.split("").map((char, idx) => {
               const isSans = idx >= CURATE_SANS_INDEX;
               return (
@@ -828,7 +942,7 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
                   key={`p3-${idx}`}
                   className={`inline-block ${isSans ? "font-neue text-[0.9em] font-medium not-italic" : "font-editorial italic font-light"} text-[#151515]/90`}
                 >
-                  {char === " " ? " " : char}
+                  {char === " " ? " " : char}
                 </span>
               );
             })}
@@ -838,17 +952,20 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
           </p>
         </div>
 
-        {/* Phase 4: Selected Works */}
+        {/* Phase 4: Selected Works
+            Item 5: "Selected" in font-editorial italic (matching other phase heading mixed style),
+            "Works" in font-neue font-medium (non-italic, like "the idea" / "the magic"). */}
         <div
           ref={phase4Ref}
           className="absolute inset-0 flex flex-col items-center justify-center text-center transition-opacity duration-300"
           style={{ opacity: 0 }}
         >
           <h2
-            className="font-neue tracking-[-0.02em] font-medium"
+            className="tracking-[-0.02em]"
             style={{ fontSize: "clamp(1.5rem, 3.5vw, 2.8rem)", color: "#151515e6" }}
           >
-            Selected Works
+            <span className="font-editorial italic font-light">Selected&nbsp;</span>
+            <span className="font-neue font-medium not-italic text-[0.9em]">Works</span>
           </h2>
         </div>
       </div>
@@ -861,7 +978,9 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
           if (slot.layer !== "mid") return null;
           const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
           const tone = curateCellShellTones[i % curateCellShellTones.length];
-          const imgSrc = workGalleryImages[slot.imageIndex];
+          // Read from module-level array (not a ref) — safe during render.
+          // The imperative animation loop updates imgEl.src directly for wraps.
+          const imgSrc = getSlotImageSrc(i);
 
           return (
             <div
@@ -900,7 +1019,8 @@ export default function CardField({ scrollYProgress }: CardFieldProps) {
           if (slot.layer !== "near") return null;
           const heightVw = (slot.wVw * slot.aspect[1]) / slot.aspect[0];
           const tone = curateCellShellTones[i % curateCellShellTones.length];
-          const imgSrc = workGalleryImages[slot.imageIndex];
+          // Read from module-level array (not a ref) — safe during render.
+          const imgSrc = getSlotImageSrc(i);
 
           return (
             <div

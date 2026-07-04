@@ -54,6 +54,12 @@ export default function DesktopWorkView({
   const galleryWheelRef = useRef<HTMLDivElement>(null);
   const [linksEnabled, setLinksEnabled] = useState(false);
   const [dubaiTime, setDubaiTime] = useState("");
+  // Item 4c: hovered project for bottom-right label swap
+  const [hoveredProject, setHoveredProject] = useState<{
+    title: string;
+    discipline: string;
+    year: string;
+  } | null>(null);
 
   const layerOpacity = useTransform(scrollYProgress, desktopWorkLayerOpacity);
   const backdropOpacity = useTransform(
@@ -128,6 +134,30 @@ export default function DesktopWorkView({
     return () => {
       window.clearInterval(intervalId);
     };
+  }, []);
+
+  // Item 4c: listen for work-tile-hover events to swap bottom-right label
+  useEffect(() => {
+    function onTileHover(e: Event) {
+      const detail = (e as CustomEvent).detail as {
+        active: boolean;
+        title?: string;
+        discipline?: string;
+        year?: string;
+      };
+      if (detail.active && detail.title) {
+        setHoveredProject({
+          title: detail.title,
+          discipline: detail.discipline ?? "",
+          year: detail.year ?? "",
+        });
+      } else {
+        setHoveredProject(null);
+      }
+    }
+
+    window.addEventListener("work-tile-hover", onTileHover);
+    return () => window.removeEventListener("work-tile-hover", onTileHover);
   }, []);
 
   return (
@@ -208,10 +238,39 @@ export default function DesktopWorkView({
               GET IN TOUCH →
             </Link>
           </div>
-          <div className="text-right">
-            <p className="font-editorial text-5xl leading-none tracking-[-0.02em] text-[#9F1F2E]">
+          {/* Item 4c+4d: bottom-right label — "works" or hovered project name + glow */}
+          <div className="relative text-right">
+            {/* Radial glow halo — fades in with hoveredProject (Item 4d) */}
+            <div
+              className="pointer-events-none absolute -inset-x-6 -inset-y-4 transition-opacity duration-200"
+              style={{
+                opacity: hoveredProject ? 1 : 0,
+                background: "radial-gradient(closest-side, rgba(21,21,21,0.10), transparent)",
+                filter: "blur(12px)",
+              }}
+              aria-hidden="true"
+            />
+            {/* Default "works" label */}
+            <p
+              className="font-editorial text-5xl leading-none tracking-[-0.02em] text-[#9F1F2E] transition-opacity duration-200"
+              style={{ opacity: hoveredProject ? 0 : 1 }}
+              aria-hidden={hoveredProject ? "true" : undefined}
+            >
               works
             </p>
+            {/* Hovered project label */}
+            <div
+              className="absolute inset-0 flex flex-col items-end justify-end transition-opacity duration-200"
+              style={{ opacity: hoveredProject ? 1 : 0 }}
+              aria-hidden={hoveredProject ? undefined : "true"}
+            >
+              <p className="font-editorial text-5xl leading-none tracking-[-0.02em] text-[#9F1F2E]">
+                {hoveredProject?.title ?? ""}
+              </p>
+              <p className="font-neue mt-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#151515]/60">
+                {hoveredProject ? `${hoveredProject.discipline} — ${hoveredProject.year}` : ""}
+              </p>
+            </div>
           </div>
         </div>
       </motion.div>
