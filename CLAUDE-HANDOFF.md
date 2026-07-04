@@ -3,6 +3,54 @@
 > Handoff from a claude.ai planning session (July 2026). This file is the source of
 > truth for the redesign work. Read it fully before writing any code.
 > Repo: `~/Documents/Personal/portfolio-2026` — live site: https://iammarkperez.com
+
+---
+
+## ⚡ SESSION STATE (updated 2026-07-04 — read this first when resuming on any device)
+
+**All original Tasks 0–6 are DONE and superseded in places by Tasks 7–9 (Mark's design
+rounds). Everything is merged to local `main` (18 commits ahead of origin at last update;
+NOT deployed — deploy only when Mark says "push").**
+
+What the site is now (desktop): hero (video loop + straight-hanging red thread that
+curves once scrolling starts) → gradient video card rises to center → gray cards burst
+from behind it → one continuous 3D card field (far/mid/near depth layers, bottom-to-top
+image fills, title phases Conveying/Creating/Curating/Selected Works at mid-depth) →
+the same field becomes the locked, auto-drifting, wheel-browsable works gallery (labels,
+links, hover color+zoom, bottom-right label swap with radial glow, no visible duplicate
+images via LRU rotation). The red thread is a canvas verlet rope (cursor-reactive,
+weaves between depth layers, tucks behind hovered cards). Site-wide zero-lag custom
+cursor, native cursor hidden. Key files: `src/components/home/CardField.tsx` (the scene),
+`src/components/home/RedThread.tsx`, `src/components/work/tileParts.tsx`,
+`src/components/SiteCursor.tsx`, curves in `src/lib/desktopHomeTransitions.ts`,
+lock/drift in `src/lib/workScrollBridge.ts`. Mobile = untouched legacy stacks (AGENTS.md
+rules still apply).
+
+**Working agreement (unchanged):** coding is delegated to SONNET subagents; the lead
+model reviews every diff and verifies in the browser before merging. One branch per task
+(`redesign/task-N-*`), merge to main after verification, never deploy without Mark.
+
+**Known gotchas for implementers:** framer-motion uses `y` not `translateY`; Tailwind v4
+`outline-none` poisons focus-visible outlines; restart the dev server after creating new
+files (Turbopack watcher); the works scroll-lock at progress 0.64 ignores synthetic
+scrolls — test by reloading while deep-scrolled; drive scroll in dev via
+`window.__portfolioScrollDebug.scrollToProgress(p)`; macOS screen-recording filenames
+contain a narrow no-break space (glob, don't type them); with auto-drift, cards sliding
+under a resting cursor legitimately re-fire hover.
+
+**Open items:**
+- Mark to review Task 9f in the browser; then "push" deploys everything.
+- Auto-drift hover-under-resting-cursor: gate on pointer movement if Mark dislikes it.
+- Mobile Lighthouse 71 vs 75 target — hero poster preload follow-up (see PERF.md).
+- Route/page transitions (thread-drawing loader and/or Next 16 View Transitions
+  tile→case-study morph, guide in node_modules/next/dist/docs/01-app/02-guides/) — parked.
+- Case-study Results sections await Mark's real numbers (commented example in
+  `src/constants/caseStudies/lsb.ts`).
+- Git identity is auto-guessed (`mrkdrrl@...local`) — set `git config --global user.email`.
+
+**Resume prompt for a fresh session:** "Read CLAUDE-HANDOFF.md (Session State first),
+RECON.md, and PERF.md. Continue from the open items / my next feedback. Coding via
+Sonnet subagents per the working agreement."
 >
 > **AMENDED (Task 0, 2026-07-02):** repo recon complete — see `RECON.md` for the full
 > component map. Tasks below carry real file paths and `AMENDED` notes where the audit
